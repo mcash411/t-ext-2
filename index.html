@@ -277,22 +277,22 @@
                         <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5 shadow-2xs">
                             <span class="text-[11px] font-bold text-slate-600 flex items-center space-x-1">
                                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                <span>快速新增單筆條碼、數量與備註至下方（格式自動辨識）</span>
+                                <span>快速新增條碼、備註與數量至下方（格式自動辨識）</span>
                             </span>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                                <div class="sm:col-span-5">
+                                <div class="sm:col-span-6">
                                     <input type="text" id="quickBatchCode" placeholder="條碼代碼 (例如 4710085213601)" 
                                         class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                                 </div>
-                                <div class="sm:col-span-4">
-                                    <input type="text" id="quickBatchNote" placeholder="備註說明 (例如 鮮乳)" 
+                                <div class="sm:col-span-3">
+                                    <input type="text" id="quickBatchNote" value="POS" placeholder="備註 (例如 POS)" 
                                         class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                                 </div>
                                 <div class="sm:col-span-3 flex space-x-1.5">
                                     <input type="number" id="quickBatchQty" value="1" min="1" max="99" placeholder="數量" 
                                         class="w-16 px-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-xs">
-                                    <button onclick="addBatchItemQuick()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-xs">
+                                    <button onclick="addBatchItemQuick()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition shadow-xs">
                                         加入
                                     </button>
                                 </div>
@@ -302,7 +302,7 @@
                                 <details class="text-xs">
                                     <summary class="cursor-pointer font-semibold text-slate-500 hover:text-slate-700">批次文字貼上匯入 (每行 條碼,備註,數量)</summary>
                                     <div class="mt-2 space-y-2">
-                                        <textarea id="batchTextarea" rows="3" placeholder="4710085213601, 鮮乳, 1&#10;20719128, 8碼商品, 2"
+                                        <textarea id="batchTextarea" rows="3" placeholder="4710085213601, 飲料, 1&#10;20719128, 零食, 2"
                                             class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                                         <button onclick="importBatchText()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
                                             匯入批量文字
@@ -381,8 +381,8 @@
             
             if (batchList.length === 0) {
                 batchList = [
-                    { id: '1', code: '4710085213601', note: 'POS', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601', isAutoSynced: true },
-                    { id: '2', code: '20719128', note: 'POS', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128', isAutoSynced: false }
+                    { id: '1', code: '4710085213601', note: '飲料', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601', isAutoSynced: true },
+                    { id: '2', code: '20719128', note: '零食', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128', isAutoSynced: false }
                 ];
             }
 
@@ -621,7 +621,6 @@
 
             const resolved = getAutoBarcodeFormat(codeVal, userSelectedFormat);
 
-            // 尋找是否已有自動同步項目，若有則直接即時更新第一筆，否則插入至首位
             const existingAutoIndex = batchList.findIndex(item => item.isAutoSynced);
             if (existingAutoIndex !== -1) {
                 batchList[existingAutoIndex].code = codeVal;
@@ -641,7 +640,6 @@
                 });
             }
 
-            // 若目前正處於批量清單介面，即時重新渲染以達到完全自動化同步
             if (currentMode === 'batch') {
                 renderBatchList();
             }
@@ -649,7 +647,7 @@
 
         function fillSampleData() {
             if (currentType === 'goods') {
-                document.getElementById('dyn_goods').value = '471008521360'; // 12-digit EAN-13 sample (will auto-add checksum)
+                document.getElementById('dyn_goods').value = '471008521360';
                 userSelectedFormat = 'AUTO';
                 document.getElementById('selectBarcodeFormat').value = 'AUTO';
             } else if (currentType === 'utility') {
@@ -686,7 +684,6 @@
                     
                     const resolved = getAutoBarcodeFormat(val, userSelectedFormat);
                     
-                    // Construct standard 7-11 POS JSON structure for single mode QR Code
                     const numericBarcode = /^\d+$/.test(resolved.code) ? Number(resolved.code) : resolved.code;
                     const qrJsonObj = {
                         "Goods": [{
@@ -993,13 +990,18 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                         <div class="flex items-center space-x-2">
                             <span class="w-5 h-5 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-[10px] font-black">${index + 1}</span>
-                            <input type="text" value="${item.note}" onchange="updateBatchNote('${item.id}', this.value)" placeholder="設備 / 備註"
-                                class="text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 px-2 py-1 rounded-md outline-none focus:ring-1 focus:ring-emerald-500 w-28 sm:w-36">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-[10px] text-slate-400">備註:</span>
+                                <input type="text" value="${item.note || 'POS'}" onchange="updateBatchNoteText('${item.id}', this.value)"
+                                    class="text-xs font-bold bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md outline-none w-28 text-slate-700">
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[11px] text-slate-500">數:</span>
-                            <input type="number" value="${item.qty}" min="1" max="99" onchange="updateBatchQty('${item.id}', this.value)"
-                                class="w-12 text-center text-xs font-bold bg-slate-50 border border-slate-200 py-1 rounded-md outline-none">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-[11px] text-slate-500">數量:</span>
+                                <input type="number" value="${item.qty}" min="1" max="99" onchange="updateBatchQty('${item.id}', this.value)"
+                                    class="w-12 text-center text-xs font-bold bg-slate-50 border border-slate-200 py-1 rounded-md outline-none">
+                            </div>
                             <button onclick="removeBatchItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs">✕</button>
                         </div>
                     </div>
@@ -1049,20 +1051,20 @@
             });
         }
 
-        function updateBatchNote(id, note) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.note = note || 'POS';
-                renderBatchList();
-            }
-        }
-
         function updateBatchFormat(id, format) {
             const item = batchList.find(i => i.id === id);
             if (item) {
                 item.formatPreference = format;
                 renderBatchList();
                 showToast(`已更新該筆一維條碼格式對應: ${format}`);
+            }
+        }
+
+        function updateBatchNoteText(id, noteVal) {
+            const item = batchList.find(i => i.id === id);
+            if (item) {
+                item.note = noteVal.trim() || 'POS';
+                renderBatchList();
             }
         }
 
@@ -1110,7 +1112,6 @@
             });
 
             codeInput.value = '';
-            noteInput.value = '';
             qtyInput.value = '1';
             renderBatchList();
             showToast('已成功加入批量清單 (自動辨識與檢查碼計算)');
@@ -1118,10 +1119,10 @@
 
         function fillBatchSample() {
             batchList = [
-                { id: 'b1', code: '471008521360', note: 'EAN-13 (自動補檢查碼)', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601' },
-                { id: 'b2', code: '20719128', note: 'EAN-8 (檢查碼驗證)', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128' },
-                { id: 'b3', code: '4710108', note: 'EAN-8 (7碼補齊)', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '47101083' },
-                { id: 'b4', code: '4711234567890', note: 'EAN-13標準', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4711234567890' }
+                { id: 'b1', code: '471008521360', note: '飲料', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601' },
+                { id: 'b2', code: '20719128', note: '零食', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128' },
+                { id: 'b3', code: '4710108', note: '鮮乳', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '47101083' },
+                { id: 'b4', code: '4711234567890', note: '便當', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4711234567890' }
             ];
             renderBatchList();
             showToast('已載入含 EAN-8/13 自動檢查碼審核與計算的批量範例');
@@ -1141,13 +1142,15 @@
                 const parts = line.split(',').map(p => p.trim());
                 if (parts[0]) {
                     const code = parts[0];
+                    const note = parts[1] || 'POS';
+                    const qty = parseInt(parts[2]) || 1;
                     const resolved = getAutoBarcodeFormat(code, 'AUTO');
 
                     batchList.push({
                         id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                         code: code,
-                        note: parts[1] || 'POS',
-                        qty: parseInt(parts[2]) || 1,
+                        note: note,
+                        qty: qty,
                         formatPreference: 'AUTO',
                         resolvedFormat: resolved.format,
                         validatedCode: resolved.code
@@ -1232,7 +1235,7 @@
                         batchList.push({
                             id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                             code: decodedText,
-                            note: 'POS',
+                            note: '掃描新增',
                             qty: 1,
                             formatPreference: 'AUTO',
                             resolvedFormat: resolved.format,
