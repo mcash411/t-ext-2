@@ -135,6 +135,22 @@
                             </select>
                         </div>
 
+                        <!-- 備註輸入設定欄位 -->
+                        <div class="sm:col-span-12 bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-[11px] font-bold text-slate-700 flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    <span>條碼上方自訂備註 (Note - 不加入二維條碼編碼內)</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 cursor-pointer text-xs font-medium text-slate-600">
+                                    <input type="checkbox" id="singleShowNote" checked onchange="generateBarcodes()" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                                    <span>顯示備註</span>
+                                </label>
+                            </div>
+                            <input type="text" id="singleNoteInput" value="特惠商品 / 門市促銷" oninput="generateBarcodes()" placeholder="輸入要顯示於條碼上方的備註文字..."
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                        </div>
+
                         <div class="sm:col-span-12 space-y-2 pt-2 border-t border-slate-200/60" id="dynamicInputsContainer">
                             <!-- Dynamic inputs -->
                         </div>
@@ -161,7 +177,12 @@
                                 <span class="text-[10px] bg-orange-50 text-orange-700 px-2.5 py-1 rounded-md font-bold border border-orange-200" id="formatLabel">AUTO (EAN13)</span>
                             </div>
                             
-                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px] space-y-4">
+                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px] space-y-3">
+                                <!-- 單筆條碼上方的備註容器 -->
+                                <div id="singleNoteDisplay" class="text-xs font-black text-slate-800 tracking-wide bg-amber-100/70 border border-amber-300/60 px-3 py-1 rounded-md shadow-2xs">
+                                    特惠商品 / 門市促銷
+                                </div>
+
                                 <div id="singleBarcodeWrapper" class="w-full flex flex-col items-center">
                                     <svg id="barcode1D" class="max-w-full"></svg>
                                 </div>
@@ -231,8 +252,7 @@
 
                         <div class="mt-4 pt-3 border-t border-slate-100 text-left text-[11px] text-slate-400 bg-slate-50 p-2.5 rounded-lg space-y-1">
                             <p>💡 <b>自動辨識與檢查碼審核機制 (Checksum Check):</b></p>
-                            <p>• <b>EAN-8:</b> 輸入 7 或 8 碼數字，系統將自動依 MOD-10 演算法計算或驗證檢查碼。</p>
-                            <p>• <b>EAN-13:</b> 輸入 12 或 13 碼數字，系統將自動依 MOD-10 演算法補齊或審核檢查碼。</p>
+                            <p>• <b>備註說明:</b> 上方備註僅供辨識與列印顯示，<b>不包含</b>在二維 QR Code 資料編碼內。</p>
                         </div>
                     </div>
                 </div>
@@ -277,22 +297,22 @@
                         <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5 shadow-2xs">
                             <span class="text-[11px] font-bold text-slate-600 flex items-center space-x-1">
                                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                <span>快速新增條碼、備註與數量至下方（格式自動辨識）</span>
+                                <span>快速新增條碼、備註與數量至下方</span>
                             </span>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                                <div class="sm:col-span-6">
+                                <div class="sm:col-span-5">
                                     <input type="text" id="quickBatchCode" placeholder="條碼代碼 (例如 4710085213601)" 
-                                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                                 </div>
-                                <div class="sm:col-span-3">
-                                    <input type="text" id="quickBatchNote" value="POS" placeholder="備註 (例如 POS)" 
-                                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                                <div class="sm:col-span-4">
+                                    <input type="text" id="quickBatchNote" placeholder="上方備註 (選填)" 
+                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                                 </div>
                                 <div class="sm:col-span-3 flex space-x-1.5">
                                     <input type="number" id="quickBatchQty" value="1" min="1" max="99" placeholder="數量" 
-                                        class="w-16 px-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-xs">
-                                    <button onclick="addBatchItemQuick()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition shadow-xs">
+                                        class="w-14 px-1 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-xs">
+                                    <button onclick="addBatchItemQuick()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-2 rounded-xl text-xs transition shadow-xs">
                                         加入
                                     </button>
                                 </div>
@@ -300,9 +320,9 @@
 
                             <div class="flex justify-between items-center pt-2 border-t border-slate-100">
                                 <details class="text-xs">
-                                    <summary class="cursor-pointer font-semibold text-slate-500 hover:text-slate-700">批次文字貼上匯入 (每行 條碼,備註,數量)</summary>
+                                    <summary class="cursor-pointer font-semibold text-slate-500 hover:text-slate-700">批次文字貼上匯入 (每行 條碼, 備註, 數量)</summary>
                                     <div class="mt-2 space-y-2">
-                                        <textarea id="batchTextarea" rows="3" placeholder="4710085213601, 飲料, 1&#10;20719128, 零食, 2"
+                                        <textarea id="batchTextarea" rows="3" placeholder="4710085213601, 特惠商品A, 1&#10;20719128, 促銷品B, 2"
                                             class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                                         <button onclick="importBatchText()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
                                             匯入批量文字
@@ -381,8 +401,8 @@
             
             if (batchList.length === 0) {
                 batchList = [
-                    { id: '1', code: '4710085213601', note: '飲料', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601', isAutoSynced: true },
-                    { id: '2', code: '20719128', note: '零食', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128', isAutoSynced: false }
+                    { id: '1', code: '4710085213601', note: '特惠活動商品A', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601', isAutoSynced: true, showNote: true },
+                    { id: '2', code: '20719128', note: '門市促銷品B', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128', isAutoSynced: false, showNote: true }
                 ];
             }
 
@@ -607,7 +627,6 @@
 
         function autoSyncToBatchList() {
             let codeVal = '';
-            let noteVal = 'POS';
 
             if (currentType === 'goods') {
                 codeVal = document.getElementById('inputUniversal').value.trim();
@@ -620,10 +639,14 @@
             if (!codeVal) return;
 
             const resolved = getAutoBarcodeFormat(codeVal, userSelectedFormat);
+            const currentNote = document.getElementById('singleNoteInput').value;
+            const showNote = document.getElementById('singleShowNote').checked;
 
             const existingAutoIndex = batchList.findIndex(item => item.isAutoSynced);
             if (existingAutoIndex !== -1) {
                 batchList[existingAutoIndex].code = codeVal;
+                batchList[existingAutoIndex].note = currentNote;
+                batchList[existingAutoIndex].showNote = showNote;
                 batchList[existingAutoIndex].formatPreference = userSelectedFormat;
                 batchList[existingAutoIndex].resolvedFormat = resolved.format;
                 batchList[existingAutoIndex].validatedCode = resolved.code;
@@ -631,7 +654,8 @@
                 batchList.unshift({
                     id: 'auto_sync_item_' + Date.now(),
                     code: codeVal,
-                    note: noteVal,
+                    note: currentNote,
+                    showNote: showNote,
                     qty: 1,
                     formatPreference: userSelectedFormat,
                     resolvedFormat: resolved.format,
@@ -669,6 +693,17 @@
             const utilityWrapper = document.getElementById('utilityBarcodesWrapper');
             const egtcWrapper = document.getElementById('egtcBarcodesWrapper');
             const errorMsg = document.getElementById('barcodeErrorMsg');
+            const noteDisplay = document.getElementById('singleNoteDisplay');
+            const noteInputVal = document.getElementById('singleNoteInput').value.trim();
+            const showNoteChecked = document.getElementById('singleShowNote').checked;
+
+            // 控制備註顯示狀態 (不包含在二維條碼編碼內)
+            if (showNoteChecked && noteInputVal !== '') {
+                noteDisplay.innerText = noteInputVal;
+                noteDisplay.classList.remove('hidden');
+            } else {
+                noteDisplay.classList.add('hidden');
+            }
             
             singleWrapper.classList.add('hidden');
             utilityWrapper.classList.add('hidden');
@@ -685,6 +720,7 @@
                     const resolved = getAutoBarcodeFormat(val, userSelectedFormat);
                     
                     const numericBarcode = /^\d+$/.test(resolved.code) ? Number(resolved.code) : resolved.code;
+                    // QR Code 純粹編碼商品代碼與數量，備註不寫入編碼
                     const qrJsonObj = {
                         "Goods": [{
                             "Commodity": [{
@@ -765,6 +801,8 @@
                 type: currentType,
                 date: new Date().toLocaleString(),
                 format: userSelectedFormat,
+                note: document.getElementById('singleNoteInput').value,
+                showNote: document.getElementById('singleShowNote').checked
             };
 
             if (currentType === 'goods') {
@@ -812,7 +850,6 @@
                         detailHtml = `
                             <p class="font-mono text-[11px] text-slate-700">1: ${item.code1}</p>
                             <p class="font-mono text-[11px] text-slate-700">2: ${item.code2}</p>
-                            ${item.code3 ? `<p class="font-mono text-[11px] text-slate-700">3: ${item.code3}</p>` : ''}
                         `;
                     } else if (item.type === 'egtc') {
                         detailHtml = `
@@ -820,6 +857,8 @@
                             <p class="font-mono text-[11px] text-slate-700">驗證: ${item.egtc2}</p>
                         `;
                     }
+
+                    const noteHtml = item.note ? `<p class="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded inline-block font-semibold mt-1">備註: ${item.note}</p>` : '';
 
                     const div = document.createElement('div');
                     div.className = "bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs";
@@ -830,6 +869,7 @@
                                 <span class="text-[10px] text-slate-400">${item.date}</span>
                             </div>
                             ${detailHtml}
+                            ${noteHtml}
                         </div>
                         <div class="flex items-center space-x-2">
                             <button onclick="loadSavedItem(${index})" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">載入</button>
@@ -859,6 +899,13 @@
             const item = savedBarcodes[index];
             document.getElementById('selectType').value = item.type;
             changeType(item.type);
+
+            if (item.note !== undefined) {
+                document.getElementById('singleNoteInput').value = item.note;
+            }
+            if (item.showNote !== undefined) {
+                document.getElementById('singleShowNote').checked = item.showNote;
+            }
 
             if (item.type === 'goods') {
                 document.getElementById('dyn_goods').value = item.code;
@@ -941,12 +988,16 @@
                 const resolved = getAutoBarcodeFormat(item.code, pref);
                 item.resolvedFormat = resolved.format;
                 item.validatedCode = resolved.code;
+                const isShowNote = item.showNote !== false;
 
                 let contentHtml = '';
                 if (batchDisplayMode === 'barcode') {
                     let warningTag = !resolved.valid ? `<span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ 檢查碼不符</span>` : '';
+                    let noteBannerHtml = (isShowNote && item.note) ? `<div class="text-xs font-bold text-slate-800 bg-amber-100/70 border border-amber-300/60 py-1 px-3 rounded-md mb-2 inline-block">${item.note}</div>` : '';
+
                     contentHtml = `
-                        <div class="text-center py-2 bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                        <div class="text-center py-2 bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden flex flex-col items-center">
+                            ${noteBannerHtml}
                             <svg id="batch_svg_${item.id}" class="max-w-full mx-auto"></svg>
                         </div>
                         <div class="flex items-center justify-between text-[11px]">
@@ -954,8 +1005,11 @@
                                 <span class="font-mono font-bold text-slate-700">${resolved.code}</span>
                                 ${warningTag}
                             </div>
-                            <div class="flex items-center space-x-1">
-                                <span class="text-[10px] text-slate-400">格式:</span>
+                            <div class="flex items-center space-x-2">
+                                <label class="flex items-center space-x-1 cursor-pointer text-[10px] text-slate-600">
+                                    <input type="checkbox" ${isShowNote ? 'checked' : ''} onchange="toggleBatchItemNote('${item.id}', this.checked)" class="rounded text-emerald-600 w-3.5 h-3.5">
+                                    <span>顯示備註</span>
+                                </label>
                                 <select onchange="updateBatchFormat('${item.id}', this.value)" class="text-[10px] bg-white border border-slate-200 rounded px-1.5 py-0.5 font-bold text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500">
                                     <option value="AUTO" ${pref==='AUTO'?'selected':''}>⚡ AUTO (${resolved.format})</option>
                                     <option value="EAN8" ${pref==='EAN8'?'selected':''}>EAN-8</option>
@@ -967,19 +1021,22 @@
                         </div>
                     `;
                 } else {
+                    // 二維條碼編碼內容保持純淨，備註不寫入編碼內
                     const qrJsonObj = {
                         "Goods": [{
                             "Commodity": [{
-                                "Device": item.note || "POS",
+                                "Device": "POS",
                                 "Barcode": isNaN(resolved.code) ? resolved.code : Number(resolved.code),
                                 "Quantity": Number(item.qty) || 1
                             }]
                         }]
                     };
                     const qrJsonString = JSON.stringify(qrJsonObj);
+                    let noteBannerHtml = (isShowNote && item.note) ? `<div class="text-xs font-bold text-slate-800 bg-amber-100/70 border border-amber-300/60 py-1 px-3 rounded-md inline-block">${item.note}</div>` : '';
 
                     contentHtml = `
                         <div class="flex flex-col items-center justify-center py-3 bg-slate-50/50 rounded-lg border border-slate-100 space-y-2">
+                            ${noteBannerHtml}
                             <div id="batch_qr_${item.id}" class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs inline-block"></div>
                             <span class="font-mono text-[10px] text-slate-500 break-all text-center px-2 max-w-xs">${qrJsonString}</span>
                         </div>
@@ -987,14 +1044,11 @@
                 }
 
                 div.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
                         <div class="flex items-center space-x-2">
                             <span class="w-5 h-5 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-[10px] font-black">${index + 1}</span>
-                            <div class="flex items-center space-x-1.5">
-                                <span class="text-[10px] text-slate-400">備註:</span>
-                                <input type="text" value="${item.note || 'POS'}" onchange="updateBatchNoteText('${item.id}', this.value)"
-                                    class="text-xs font-bold bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md outline-none w-28 text-slate-700">
-                            </div>
+                            <input type="text" value="${item.note || ''}" placeholder="點此修改備註..." onchange="updateBatchNoteText('${item.id}', this.value)"
+                                class="text-xs font-bold text-slate-700 bg-transparent border-b border-dashed border-slate-300 focus:border-emerald-600 outline-none px-1 py-0.5 max-w-[150px]">
                         </div>
                         <div class="flex items-center space-x-3">
                             <div class="flex items-center space-x-1">
@@ -1028,7 +1082,7 @@
                                 const qrJsonObj = {
                                     "Goods": [{
                                         "Commodity": [{
-                                            "Device": item.note || "POS",
+                                            "Device": "POS",
                                             "Barcode": isNaN(resolved.code) ? resolved.code : Number(resolved.code),
                                             "Quantity": Number(item.qty) || 1
                                         }]
@@ -1060,18 +1114,27 @@
             }
         }
 
-        function updateBatchNoteText(id, noteVal) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.note = noteVal.trim() || 'POS';
-                renderBatchList();
-            }
-        }
-
         function updateBatchQty(id, qty) {
             const item = batchList.find(i => i.id === id);
             if (item) {
                 item.qty = parseInt(qty) || 1;
+                renderBatchList();
+            }
+        }
+
+        function updateBatchNoteText(id, noteVal) {
+            const item = batchList.find(i => i.id === id);
+            if (item) {
+                item.note = noteVal;
+                renderBatchList();
+                showToast('已更新備註');
+            }
+        }
+
+        function toggleBatchItemNote(id, show) {
+            const item = batchList.find(i => i.id === id);
+            if (item) {
+                item.showNote = show;
                 renderBatchList();
             }
         }
@@ -1104,7 +1167,8 @@
             batchList.push({
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                 code: code,
-                note: noteInput.value.trim() || 'POS',
+                note: noteInput.value.trim(),
+                showNote: true,
                 qty: parseInt(qtyInput.value) || 1,
                 formatPreference: 'AUTO',
                 resolvedFormat: resolved.format,
@@ -1112,20 +1176,21 @@
             });
 
             codeInput.value = '';
+            noteInput.value = '';
             qtyInput.value = '1';
             renderBatchList();
-            showToast('已成功加入批量清單 (自動辨識與檢查碼計算)');
+            showToast('已成功加入批量清單');
         }
 
         function fillBatchSample() {
             batchList = [
-                { id: 'b1', code: '471008521360', note: '飲料', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601' },
-                { id: 'b2', code: '20719128', note: '零食', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128' },
-                { id: 'b3', code: '4710108', note: '鮮乳', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '47101083' },
-                { id: 'b4', code: '4711234567890', note: '便當', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4711234567890' }
+                { id: 'b1', code: '471008521360', note: '特惠指定品A', showNote: true, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601' },
+                { id: 'b2', code: '20719128', note: '門市活動贈品B', showNote: true, qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128' },
+                { id: 'b3', code: '4710108', note: '常溫飲料區C', showNote: false, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '47101083' },
+                { id: 'b4', code: '4711234567890', note: '進口零食D', showNote: true, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4711234567890' }
             ];
             renderBatchList();
-            showToast('已載入含 EAN-8/13 自動檢查碼審核與計算的批量範例');
+            showToast('已載入含備註的批量範例');
         }
 
         function importBatchText() {
@@ -1142,14 +1207,15 @@
                 const parts = line.split(',').map(p => p.trim());
                 if (parts[0]) {
                     const code = parts[0];
-                    const note = parts[1] || 'POS';
-                    const qty = parseInt(parts[2]) || 1;
+                    const note = parts[1] && isNaN(parts[1]) ? parts[1] : '';
+                    const qty = parseInt(parts[parts.length - 1]) || 1;
                     const resolved = getAutoBarcodeFormat(code, 'AUTO');
 
                     batchList.push({
                         id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                         code: code,
                         note: note,
+                        showNote: true,
                         qty: qty,
                         formatPreference: 'AUTO',
                         resolvedFormat: resolved.format,
@@ -1161,7 +1227,7 @@
 
             document.getElementById('batchTextarea').value = '';
             renderBatchList();
-            showToast(`成功匯入 ${addedCount} 筆項目（已自動驗證計算檢查碼）`);
+            showToast(`成功匯入 ${addedCount} 筆項目`);
         }
 
         function toggleScanner() {
@@ -1229,20 +1295,21 @@
                     { facingMode: "environment" },
                     { fps: 10, qrbox: { width: 250, height: 150 } },
                     (decodedText, decodedResult) => {
-                        document.getElementById('batchScanFeedback').innerText = `已加入: ${decodedText}`;
+                        document.getElementById('batchScanFeedback').innerText = `T已加入: ${decodedText}`;
                         const resolved = getAutoBarcodeFormat(decodedText, 'AUTO');
 
                         batchList.push({
                             id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                             code: decodedText,
-                            note: '掃描新增',
+                            note: '相機掃描項目',
+                            showNote: true,
                             qty: 1,
                             formatPreference: 'AUTO',
                             resolvedFormat: resolved.format,
                             validatedCode: resolved.code
                         });
                         renderBatchList();
-                        showToast(`已掃描加入並審核: ${decodedText}`);
+                        showToast(`已掃描加入: ${decodedText}`);
                     },
                     (errorMessage) => {}
                 ).catch(err => {
