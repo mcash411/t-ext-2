@@ -31,28 +31,63 @@
         .bg-seven-stripe {
             background: linear-gradient(135deg, #e11d48 0%, #e11d48 33%, #ea580c 33%, #ea580c 66%, #059669 66%, #059669 100%);
         }
+        .batch-input-resizable {
+            field-sizing: content;
+            min-height: 32px;
+            resize: none;
+            overflow-y: hidden;
+            line-height: 1.3;
+        }
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .print-container { box-shadow: none !important; border: none !important; max-width: 100% !important; margin: 0 !important; }
-            .batch-item { break-inside: avoid; page-break-inside: avoid; border: 1px solid #cbd5e1 !important; margin-bottom: 20px !important; }
-            .print-only-header { display: block !important; }
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            .print-container { box-shadow: none !important; border: none !important; max-width: none !important; width: 100% !important; padding: 0 !important; }
+            @page { size: portrait; margin: 10mm; }
+            
+            #batchResultsContainer {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                grid-template-rows: repeat(4, auto) !important;
+                gap: 8mm !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .batch-page-group {
+                display: contents !important;
+            }
+            .batch-item {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                border: 1px solid #cbd5e1 !important;
+                margin-bottom: 0 !important;
+                padding: 10px !important;
+                background: white !important;
+                box-sizing: border-box !important;
+                max-height: 55mm !important;
+                overflow: hidden !important;
+                transform: scale(0.95);
+                transform-origin: top center;
+            }
+            .page-break-wrapper {
+                display: contents !important;
+                break-after: page !important;
+                page-break-after: always !important;
+            }
         }
-        .print-only-header { display: none; }
     </style>
 </head>
 <body class="min-h-screen text-slate-800 pb-20 select-none">
 
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 no-print shadow-xs">
         <div class="h-1.5 bg-seven-stripe w-full"></div>
-        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xl tracking-tighter shadow-sm border border-slate-800">
                     7<span class="text-xs text-emerald-400">11</span>
                 </div>
                 <div>
                     <h1 class="font-bold text-base md:text-lg leading-tight text-slate-900">7-ELEVEN POS 條碼、繳費單與兌換券系統</h1>
-                    <p class="text-[11px] text-slate-500">一維條碼自動辨識、檢查碼審核、智能格式調整與批量列印</p>
+                    <p class="text-[11px] text-slate-500">智慧掃描引擎 (支援即時自動調整與連動)</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -60,54 +95,69 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     <span>已儲存條碼 (<span id="savedCountBadge">0</span>)</span>
                 </button>
-                <button onclick="triggerUniversalPrint()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl font-bold transition flex items-center space-x-1.5 shadow-xs">
+                <button onclick="window.print()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl font-medium transition flex items-center space-x-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    <span>列印 / 存PDF</span>
+                    <span class="hidden sm:inline">列印 / 存PDF</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 mt-6">
-        <div class="print-only-header text-center mb-6 border-b-2 border-slate-900 pb-3">
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">7-ELEVEN POS 條碼與列印憑證</h2>
-            <p class="text-xs text-slate-600 mt-1">列印時間: <span id="printTimestamp"></span> | 支援超商掃描與櫃檯 POS 讀取</p>
-        </div>
-
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+    <main class="max-w-6xl mx-auto px-4 mt-6">
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container p-2 md:p-6">
             
-            <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between no-print">
+            <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between no-print rounded-xl mb-5">
                 <div class="flex items-center space-x-2.5">
                     <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span class="font-bold text-sm tracking-wide">POS 條碼模式切換</span>
                 </div>
                 <div class="flex items-center space-x-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
                     <button onclick="switchMode('single')" id="modeSingleBtn" class="px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-600 text-white">單筆即時模式</button>
-                    <button onclick="switchMode('batch')" id="modeBatchBtn" class="px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">批量生成模式</button>
+                    <button onclick="switchMode('batch')" id="modeBatchBtn" class="px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">商品批量生成模式</button>
                 </div>
             </div>
 
-            <!-- Single mode interface -->
-            <div id="singleModeSection" class="p-5 space-y-6">
+            <div id="singleModeSection" class="p-2 space-y-6">
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3.5 no-print">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 border-b border-slate-200 pb-2">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-bold text-slate-700 border-b border-slate-200 pb-2 gap-2">
                         <span class="flex items-center space-x-1.5">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                            <span>一維條碼自動辨識、檢查碼審核與相機掃描</span>
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 11-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 11-4m0 4v2m0-6V4"></path></svg>
+                            <span>單筆條碼輸入與即時生成</span>
                         </span>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="toggleScanner()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
+                        <div class="flex items-center space-x-2 flex-wrap gap-1">
+                            <label class="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-emerald-800 text-xs font-bold shadow-2xs cursor-pointer">
+                                <input type="checkbox" id="autoAppendToggle" checked class="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5">
+                                <span>掃描自動追加至批量清單</span>
+                            </label>
+                            <button onclick="toggleScanner()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                <span id="scannerBtnText">開啟相機連續掃描</span>
+                                <span id="scannerBtnText">開啟連續掃描</span>
                             </button>
-                            <button onclick="fillSampleData()" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold underline active:opacity-75">預設範例</button>
+                            <button onclick="fillSampleData()" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold underline active:opacity-75">載入範例</button>
+                        </div>
+                    </div>
+
+                    <div id="multiScanStatusBar" class="hidden bg-emerald-900 text-emerald-100 p-3 rounded-xl border border-emerald-700 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="text-xs font-bold" id="multiScanPromptText">多段掃描進行中：請依序掃描條碼</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="resetMultiScanProgress()" class="text-[11px] bg-emerald-800 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg border border-emerald-600 transition font-bold">重新掃描第一段</button>
                         </div>
                     </div>
 
                     <div id="scannerContainer" class="hidden bg-slate-900 p-3 rounded-xl border border-slate-700 text-center relative">
+                        <div class="mb-2 flex items-center justify-center space-x-2 text-[11px] text-emerald-300 font-bold bg-slate-800/80 py-1 px-2 rounded-md border border-slate-700">
+                            <svg class="w-3.5 h-3.5 text-emerald-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>支援相機掃描條碼辨識</span>
+                        </div>
                         <div id="reader" class="w-full max-w-md mx-auto overflow-hidden rounded-lg"></div>
                         <div id="scanFeedback" class="mt-2 text-xs font-bold text-emerald-400 h-5"></div>
-                        <button onclick="toggleScanner()" class="mt-2 text-xs bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg font-bold transition">關閉相機</button>
+                        <div class="flex items-center justify-center space-x-3 mt-2">
+                            <button id="torchBtn" onclick="toggleFlashlight()" class="hidden text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold transition">開啟手電筒補光</button>
+                            <button onclick="toggleScanner()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg font-bold transition">關閉相機</button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
@@ -115,54 +165,25 @@
                             <label class="block text-[11px] font-semibold text-slate-500 mb-1">單號類型 (Type)</label>
                             <select id="selectType" onchange="changeType(this.value)"
                                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                                <option value="goods" selected>商品 (Goods - 一維條碼自動辨識與檢查碼審核)</option>
-                                <option value="utility">繳費單 (Utility - 三段條碼)</option>
-                                <option value="egtc">電子兌換券 (EGTC - 兩段條碼)</option>
+                                <option value="goods" selected>商品 (Goods - 自動辨識 EAN-8 / EAN-13)</option>
+                                <option value="utility">繳費單 (Utility - Ordinary 三段式 Code 39)</option>
+                                <option value="egtc">電子兌換券 (EGTC - 2組 Code 39)</option>
                             </select>
                         </div>
                         <div class="sm:col-span-4" id="formatSelectWrapper">
-                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">
-                                一維條碼格式 
-                                <span class="text-[10px] text-emerald-600 font-bold">(自動檢核 EAN-8/13)</span>
-                            </label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-semibold text-slate-500">一維條碼格式</label>
+                                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200" id="autoFormatIndicator">自動智慧判斷</span>
+                            </div>
                             <select id="selectBarcodeFormat" onchange="setBarcodeFormat(this.value)"
-                                class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                                <option value="AUTO" selected>⚡ 自動辨識 (EAN-8/13/128)</option>
-                                <option value="EAN8">EAN-8 (8碼 + 檢查碼)</option>
-                                <option value="EAN13">EAN-13 (12/13碼 + 檢查碼)</option>
-                                <option value="CODE128">CODE128 (通用)</option>
-                                <option value="CODE39">CODE39 (英數)</option>
+                                class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                                <option value="AUTO" selected>自動智慧判斷 (Auto EAN-8/13)</option>
+                                <option value="EAN13">EAN-13 (13碼)</option>
+                                <option value="EAN8">EAN-8 (8碼)</option>
                             </select>
                         </div>
 
-                        <!-- 備註輸入設定欄位 -->
-                        <div class="sm:col-span-12 bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-[11px] font-bold text-slate-700 flex items-center space-x-1">
-                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                    <span>條碼上方自訂備註 (Note - 不加入二維條碼編碼內)</span>
-                                </label>
-                                <label class="flex items-center space-x-1.5 cursor-pointer text-xs font-medium text-slate-600">
-                                    <input type="checkbox" id="singleShowNote" checked onchange="generateBarcodes()" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                                    <span>顯示備註</span>
-                                </label>
-                            </div>
-                            <input type="text" id="singleNoteInput" value="特惠商品 / 門市促銷" oninput="generateBarcodes()" placeholder="輸入要顯示於條碼上方的備註文字..."
-                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                        </div>
-
-                        <div class="sm:col-span-12 space-y-2 pt-2 border-t border-slate-200/60" id="dynamicInputsContainer">
-                            <!-- Dynamic inputs -->
-                        </div>
-
-                        <div class="hidden">
-                            <input type="text" id="inputUniversal" value="4710085213601">
-                            <input type="text" id="inputCode1">
-                            <input type="text" id="inputCode2">
-                            <input type="text" id="inputCode3">
-                            <input type="text" id="inputEgtcBarcode1">
-                            <input type="text" id="inputEgtcBarcode2">
-                        </div>
+                        <div class="sm:col-span-12 space-y-2 pt-2 border-t border-slate-200/60" id="dynamicInputsContainer"></div>
                     </div>
                 </div>
 
@@ -174,1109 +195,806 @@
                                     <span class="w-2 h-2 rounded-full bg-orange-500"></span>
                                     <span class="font-bold text-slate-700">1D Barcode (一維條碼)</span>
                                 </span>
-                                <span class="text-[10px] bg-orange-50 text-orange-700 px-2.5 py-1 rounded-md font-bold border border-orange-200" id="formatLabel">AUTO (EAN13)</span>
+                                <span class="text-[10px] bg-orange-50 text-orange-700 px-2 py-0.5 rounded-md font-bold border border-orange-200" id="formatLabel">自動辨識 EAN-13</span>
                             </div>
                             
-                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px] space-y-3">
-                                <!-- 單筆條碼上方的備註容器 -->
-                                <div id="singleNoteDisplay" class="text-xs font-black text-slate-800 tracking-wide bg-amber-100/70 border border-amber-300/60 px-3 py-1 rounded-md shadow-2xs">
-                                    特惠商品 / 門市促銷
-                                </div>
-
+                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px] space-y-4">
                                 <div id="singleBarcodeWrapper" class="w-full flex flex-col items-center">
                                     <svg id="barcode1D" class="max-w-full"></svg>
                                 </div>
 
                                 <div id="utilityBarcodesWrapper" class="w-full flex flex-col items-center space-y-3 hidden">
                                     <div class="w-full flex flex-col items-center">
-                                        <span class="text-[10px] text-slate-400 mb-0.5">Code 1</span>
+                                        <span class="text-[10px] text-slate-400 mb-0.5">code1 (Code 39)</span>
                                         <svg id="barcodeCode1" class="max-w-full"></svg>
                                     </div>
                                     <div class="w-full flex flex-col items-center">
-                                        <span class="text-[10px] text-slate-400 mb-0.5">Code 2</span>
+                                        <span class="text-[10px] text-slate-400 mb-0.5">code2 (Code 39)</span>
                                         <svg id="barcodeCode2" class="max-w-full"></svg>
                                     </div>
-                                    <div id="wrapperCode3" class="w-full flex flex-col items-center">
-                                        <span class="text-[10px] text-slate-400 mb-0.5">Code 3</span>
+                                    <div id="wrapperCode3" class="w-full flex flex-col items-center hidden">
+                                        <span class="text-[10px] text-slate-400 mb-0.5">code3 (Code 39)</span>
                                         <svg id="barcodeCode3" class="max-w-full"></svg>
                                     </div>
                                 </div>
 
                                 <div id="egtcBarcodesWrapper" class="w-full flex flex-col items-center space-y-3 hidden">
                                     <div class="w-full flex flex-col items-center">
-                                        <span class="text-[10px] text-slate-400 mb-0.5">Barcode 1 (兌換券號)</span>
+                                        <span class="text-[10px] text-slate-400 mb-0.5">Barcode1 (Code 39)</span>
                                         <svg id="barcodeEgtc1" class="max-w-full"></svg>
                                     </div>
                                     <div class="w-full flex flex-col items-center">
-                                        <span class="text-[10px] text-slate-400 mb-0.5">Barcode 2 (驗證碼)</span>
+                                        <span class="text-[10px] text-slate-400 mb-0.5">Barcode2 (Code 39)</span>
                                         <svg id="barcodeEgtc2" class="max-w-full"></svg>
                                     </div>
                                 </div>
 
-                                <div id="barcodeErrorMsg" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg w-full text-center font-medium">
-                                    條碼格式或長度錯誤
+                                <div id="barcodeErrorMsg" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-lg w-full text-center font-bold">
+                                    條碼格式或長度錯誤：EAN-8必須為8碼純數字，EAN-13必須為13碼純數字。
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row justify-center no-print gap-2">
-                            <button onclick="saveCurrentBarcode()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs">
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2 justify-center no-print">
+                            <button onclick="appendCurrentToBatch()" id="appendBatchBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span>追加為新一筆至批量清單末端</span>
+                            </button>
+                            <button onclick="saveCurrentBarcode()" id="saveBtn" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs">
                                 <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                                <span>儲存條碼</span>
-                            </button>
-                            <button onclick="printSingleDirect()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                <span>列印此單筆</span>
-                            </button>
-                            <button onclick="autoSyncAndSwitchToBatch()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-                                <span>檢視批量清單</span>
+                                <span>儲存此筆到我的清單</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="w-full text-center flex flex-col justify-between pt-4 md:pt-0">
+                    <div class="w-full text-center flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between text-xs text-slate-500 font-medium mb-3">
                                 <span class="flex items-center space-x-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                                     <span class="font-bold text-slate-700">QR Code (二維條碼)</span>
                                 </span>
-                                <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold border border-emerald-200">Standard</span>
+                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-bold border border-blue-200" id="qrSchemaLabel">Standard POS JSON Schema</span>
                             </div>
-                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px] space-y-3">
-                                <div id="qrcode" class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs inline-block"></div>
-                                <p id="qrDataText" class="font-mono text-[11px] text-slate-500 break-all max-w-xs"></p>
-                            </div>
-                        </div>
 
-                        <div class="mt-4 pt-3 border-t border-slate-100 text-left text-[11px] text-slate-400 bg-slate-50 p-2.5 rounded-lg space-y-1">
-                            <p>💡 <b>自動辨識與檢查碼審核機制 (Checksum Check):</b></p>
-                            <p>• <b>備註說明:</b> 上方備註僅供辨識與列印顯示，<b>不包含</b>在二維 QR Code 資料編碼內。</p>
+                            <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px]">
+                                <div id="qrcodeWrapper" class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs inline-block">
+                                    <div id="qrcode"></div>
+                                </div>
+                                <div id="qrPlaceholderMsg" class="hidden text-xs text-slate-400 font-medium py-6">
+                                    條碼格式錯誤，已自動隱藏二維條碼
+                                </div>
+                                <p id="qrDataText" class="text-[11px] font-mono text-slate-500 mt-3 break-all max-w-xs"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="batchModeSection" class="p-5 space-y-6 hidden">
+            <div id="batchModeSection" class="p-2 space-y-6 hidden">
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3.5 no-print">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-bold text-slate-700 border-b border-slate-200 pb-2 gap-2">
                         <span class="flex items-center space-x-1.5">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                            <span>批量條碼自動辨識、格式調整與相機掃描工具</span>
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                            <span>商品批量生成與辨識 (支援欄位自動調整大小)</span>
                         </span>
                         <div class="flex items-center flex-wrap gap-2">
-                            <button onclick="toggleBatchScannerSection()" id="batchScannerToggleBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                <span id="batchScannerToggleText">展開批量條碼輸入與相機掃描</span>
+                            <button onclick="toggleBatchScanner()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span id="batchScannerBtnText">開啟相機掃描加入商品</span>
                             </button>
-                            <button onclick="printBatchDirect()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                <span>列印全部批量清單</span>
-                            </button>
-                            <button onclick="fillBatchSample()" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold underline">載入批量範例</button>
+                            <button onclick="fillBatchSample()" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold underline">載入商品範例</button>
                         </div>
                     </div>
 
-                    <div id="batchInputScannerWrapper" class="hidden space-y-3 pt-1">
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[11px] font-semibold text-slate-500">相機鏡頭連續掃描辨識 (自動對應一維條碼)</span>
-                                <button onclick="toggleBatchScanner()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                    <span id="batchScannerBtnText">啟動相機掃描</span>
+                    <div id="batchScannerContainer" class="hidden bg-slate-900 p-3 rounded-xl border border-slate-700 text-center relative">
+                        <div class="mb-2 flex items-center justify-center space-x-2 text-[11px] text-emerald-300 font-bold bg-slate-800/80 py-1 px-2 rounded-md border border-slate-700">
+                            <svg class="w-3.5 h-3.5 text-emerald-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>支援相機連續掃描商品</span>
+                        </div>
+                        <div id="batchReader" class="w-full max-w-md mx-auto overflow-hidden rounded-lg"></div>
+                        <div id="batchScanFeedback" class="mt-2 text-xs font-bold text-emerald-400 h-5"></div>
+                        <div class="flex items-center justify-center space-x-3 mt-2">
+                            <button id="batchTorchBtn" onclick="toggleBatchFlashlight()" class="hidden text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold transition">開啟手電筒補光</button>
+                            <button onclick="toggleBatchScanner()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg font-bold transition">關閉相機</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-3 shadow-2xs">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-2.5 gap-2">
+                            <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                <span>商品批量清單編輯區 (品名支援自動換行與動態調整) <span class="text-emerald-600 font-semibold" id="batchLinesCountText">(共 2 筆)</span></span>
+                            </span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="addBatchRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    <span>新增一列商品</span>
+                                </button>
+                                <button onclick="clearBatchRows()" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition">
+                                    清空清單
                                 </button>
                             </div>
-                            <div id="batchScannerContainer" class="hidden bg-slate-900 p-3 rounded-xl border border-slate-700 text-center relative">
-                                <div id="batchReader" class="w-full max-w-md mx-auto overflow-hidden rounded-lg"></div>
-                                <div id="batchScanFeedback" class="mt-2 text-xs font-bold text-emerald-400 h-5"></div>
-                                <button onclick="toggleBatchScanner()" class="mt-2 text-xs bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg font-bold transition">關閉相機</button>
-                            </div>
                         </div>
 
-                        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5 shadow-2xs">
-                            <span class="text-[11px] font-bold text-slate-600 flex items-center space-x-1">
-                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                <span>快速新增條碼、備註與數量至下方</span>
-                            </span>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                                <div class="sm:col-span-5">
-                                    <input type="text" id="quickBatchCode" placeholder="條碼代碼 (例如 4710085213601)" 
-                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                                </div>
-                                <div class="sm:col-span-4">
-                                    <input type="text" id="quickBatchNote" placeholder="上方備註 (選填)" 
-                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                                </div>
-                                <div class="sm:col-span-3 flex space-x-1.5">
-                                    <input type="number" id="quickBatchQty" value="1" min="1" max="99" placeholder="數量" 
-                                        class="w-14 px-1 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-xs">
-                                    <button onclick="addBatchItemQuick()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-2 rounded-xl text-xs transition shadow-xs">
-                                        加入
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-500 px-1">
+                            <div class="col-span-5 sm:col-span-4">條碼 (Barcode)</div>
+                            <div class="col-span-3 sm:col-span-2">數量 (Qty)</div>
+                            <div class="col-span-3 sm:col-span-5">品名說明 (Note)</div>
+                            <div class="col-span-1 text-center">操作</div>
+                        </div>
 
-                            <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-                                <details class="text-xs">
-                                    <summary class="cursor-pointer font-semibold text-slate-500 hover:text-slate-700">批次文字貼上匯入 (每行 條碼, 備註, 數量)</summary>
-                                    <div class="mt-2 space-y-2">
-                                        <textarea id="batchTextarea" rows="3" placeholder="4710085213601, 特惠商品A, 1&#10;20719128, 促銷品B, 2"
-                                            class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
-                                        <button onclick="importBatchText()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
-                                            匯入批量文字
-                                        </button>
-                                    </div>
-                                </details>
-                                <button onclick="clearBatchList()" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1 rounded-lg border border-rose-200 bg-rose-50 transition">清空清單</button>
-                            </div>
+                        <div id="batchRowsContainer" class="space-y-2 max-h-[350px] overflow-y-auto pr-1"></div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-3 rounded-xl border border-slate-200 gap-3">
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <label class="text-[11px] font-bold text-slate-600 whitespace-nowrap">一維條碼格式模式：</label>
+                            <select id="batchFormatSelect" onchange="generateBatchBarcodes()"
+                                class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                                <option value="AUTO" selected>自動智慧判斷 (Auto EAN-8 / EAN-13)</option>
+                                <option value="EAN13">強制 EAN-13 (13碼)</option>
+                                <option value="EAN8">強制 EAN-8 (8碼)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                            <label class="flex items-center space-x-1.5 px-2.5 py-1 text-[11px] cursor-pointer">
+                                <input type="checkbox" id="batchShowQrToggle" onchange="generateBatchBarcodes()" checked class="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5">
+                                <span class="text-slate-700 font-semibold">顯示商品二維條碼 (QR Code)</span>
+                            </label>
+                            <button onclick="saveBatchBarcodes()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                <span>儲存所有商品</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-slate-500 font-medium px-1 gap-2">
-                        <span class="font-bold text-slate-700">已產生的批量條碼清單 (<span id="batchCountBadge">0</span>)</span>
-                        
-                        <div class="flex items-center space-x-2">
-                            <div class="flex items-center space-x-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
-                                <button onclick="setBatchDisplayMode('barcode')" id="batchDisplayBarcodeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-600 text-white transition">一維條碼</button>
-                                <button onclick="setBatchDisplayMode('qrcode')" id="batchDisplayQrcodeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded text-slate-600 hover:bg-slate-100 transition">二維 QR 碼</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="batchItemsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Batch items rendered dynamically -->
-                    </div>
-                </div>
+                <div id="batchResultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
 
         </section>
     </main>
 
-    <div id="savedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden no-print">
-        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+    <div id="toastNotification" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 border border-slate-700">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+        <span id="toastText">已成功自動追加至批量清單末端！</span>
+    </div>
+
+    <div id="savedModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
             <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     <span class="font-bold text-sm">已儲存的條碼清單</span>
                 </div>
-                <button onclick="closeSavedModal()" class="text-slate-400 hover:text-white p-1 rounded-lg text-xs font-bold">✕ 關閉</button>
+                <button onclick="closeSavedModal()" class="text-slate-400 hover:text-white p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             
-            <div class="p-4 overflow-y-auto flex-1 space-y-3 bg-slate-50/50" id="savedItemsList">
-                <!-- Saved items -->
-            </div>
+            <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="savedListContainer"></div>
 
-            <div class="p-3 bg-white border-t border-slate-200 flex justify-between items-center text-xs">
-                <button onclick="clearAllSaved()" class="text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 transition">清空全部儲存</button>
-                <button onclick="closeSavedModal()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl transition">確定</button>
+            <div class="bg-white border-t border-slate-200 px-5 py-3 flex justify-between items-center">
+                <button onclick="clearSavedBarcodes()" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-lg hover:bg-rose-50 transition">
+                    清空所有儲存
+                </button>
+                <button onclick="closeSavedModal()" class="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                    關閉視窗
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="customToast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-bold transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none flex items-center space-x-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span id="toastMsg">提示訊息</span>
-    </div>
-
     <script>
         let currentMode = 'single';
-        let currentType = 'goods';
-        let userSelectedFormat = 'AUTO'; 
-        let batchDisplayMode = 'barcode';
+        let currentBarcodeFormat = 'AUTO';
         let html5QrCode = null;
-        let batchHtml5QrCode = null;
         let isScannerRunning = false;
+        let batchHtml5QrCode = null;
         let isBatchScannerRunning = false;
-        let isBatchScannerSectionOpen = false;
+        let savedBarcodes = JSON.parse(localStorage.getItem('seven_pos_saved') || '[]');
+        
+        let lastScannedText = "";
+        let lastScannedTime = 0;
+        let trackInstance = null;
+        let batchTrackInstance = null;
+        let multiScanStep = 0; 
+        let formState = {
+            goods: {
+                barcode: "4710782177512",
+                qty: 1
+            },
+            utility: {
+                code1: "120521843",
+                code2: "3145599810110063",
+                code3: ""
+            },
+            egtc: {
+                barcode1: "7500088501181646",
+                barcode2: "GKGE047D"
+            }
+        };
 
-        let batchList = [];
-        let savedBarcodes = JSON.parse(localStorage.getItem('seven_pos_saved_barcodes') || '[]');
+        let batchItems = [];
+
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.12);
+            } catch (e) {}
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
-            changeType('goods');
-            
-            if (batchList.length === 0) {
-                batchList = [
-                    { id: '1', code: '4710085213601', note: '特惠活動商品A', qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601', isAutoSynced: true, showNote: true },
-                    { id: '2', code: '20719128', note: '門市促銷品B', qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128', isAutoSynced: false, showNote: true }
-                ];
-            }
-
-            switchMode('single');
+            initDynamicInputs('goods');
             updateSavedCount();
-            
-            document.addEventListener('input', (e) => {
-                if (e.target.matches('.dynamic-input')) {
-                    syncInputsToHidden();
-                    generateBarcodes();
-                    autoSyncToBatchList();
-                }
-            });
+            renderBatchRows();
+            generateSingleBarcodes();
         });
 
-        // MOD-10 演算法計算或驗證 EAN 檢查碼
-        function calculateEanChecksum(digits) {
-            let sum = 0;
-            const len = digits.length;
-            for (let i = 0; i < len; i++) {
-                let d = parseInt(digits[len - 1 - i], 10);
-                sum += (i % 2 === 0) ? d * 3 : d * 1;
-            }
-            let mod = sum % 10;
-            return mod === 0 ? 0 : 10 - mod;
-        }
-
-        // 核心一維條碼自動辨識、格式調整與檢核碼處理函數
-        function getAutoBarcodeFormat(codeStr, preference) {
-            if (!codeStr) return { format: 'CODE128', code: codeStr, valid: true };
-            const cleanStr = codeStr.trim();
-            const isNumeric = /^\d+$/.test(cleanStr);
-            const len = cleanStr.length;
-
-            if (preference && preference !== 'AUTO') {
-                let targetCode = cleanStr;
-                if (preference === 'EAN8') {
-                    if (len === 7 && isNumeric) {
-                        targetCode = cleanStr + calculateEanChecksum(cleanStr);
-                    }
-                } else if (preference === 'EAN13') {
-                    if (len === 12 && isNumeric) {
-                        targetCode = cleanStr + calculateEanChecksum(cleanStr);
-                    }
-                }
-                return { format: preference, code: targetCode, valid: true };
-            }
-
-            if (isNumeric) {
-                if (len === 7) {
-                    const checksum = calculateEanChecksum(cleanStr);
-                    return { format: 'EAN8', code: cleanStr + checksum, valid: true };
-                } else if (len === 8) {
-                    const body = cleanStr.substring(0, 7);
-                    const expectedChecksum = calculateEanChecksum(body);
-                    const actualChecksum = parseInt(cleanStr.charAt(7), 10);
-                    return { format: 'EAN8', code: cleanStr, valid: expectedChecksum === actualChecksum };
-                } else if (len === 12) {
-                    const checksum = calculateEanChecksum(cleanStr);
-                    return { format: 'EAN13', code: cleanStr + checksum, valid: true };
-                } else if (len === 13) {
-                    const body = cleanStr.substring(0, 12);
-                    const expectedChecksum = calculateEanChecksum(body);
-                    const actualChecksum = parseInt(cleanStr.charAt(12), 10);
-                    return { format: 'EAN13', code: cleanStr, valid: expectedChecksum === actualChecksum };
-                } else if (len === 14 || (len >= 9 && len <= 11)) {
-                    return { format: 'CODE128', code: cleanStr, valid: true };
-                } else if (len >= 3 && len <= 6) {
-                    return { format: 'CODE39', code: cleanStr, valid: true };
-                } else {
-                    return { format: 'CODE128', code: cleanStr, valid: true };
-                }
-            }
-            
-            return { format: 'CODE128', code: cleanStr, valid: true };
-        }
-
-        function triggerUniversalPrint() {
-            document.getElementById('printTimestamp').innerText = new Date().toLocaleString();
-            window.print();
-        }
-
-        function printSingleDirect() {
-            document.getElementById('printTimestamp').innerText = new Date().toLocaleString();
-            if (currentMode !== 'single') {
-                switchMode('single');
-            }
-            window.print();
-        }
-
-        function printBatchDirect() {
-            document.getElementById('printTimestamp').innerText = new Date().toLocaleString();
-            if (currentMode !== 'batch') {
-                switchMode('batch');
-            }
-            window.print();
-        }
-
         function showToast(msg) {
-            const toast = document.getElementById('customToast');
-            const toastMsg = document.getElementById('toastMsg');
-            toastMsg.innerText = msg;
+            const toast = document.getElementById('toastNotification');
+            const toastText = document.getElementById('toastText');
+            if(!toast || !toastText) return;
+            toastText.innerText = msg;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
             setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            }, 2200);
         }
 
         function switchMode(mode) {
             currentMode = mode;
+            if(isScannerRunning) toggleScanner();
+            if(isBatchScannerRunning) toggleBatchScanner();
+
             const singleSec = document.getElementById('singleModeSection');
             const batchSec = document.getElementById('batchModeSection');
-            const singleBtn = document.getElementById('modeSingleBtn');
-            const batchBtn = document.getElementById('modeBatchBtn');
+            const btnSingle = document.getElementById('modeSingleBtn');
+            const btnBatch = document.getElementById('modeBatchBtn');
 
-            if (mode === 'single') {
+            if(mode === 'single') {
                 singleSec.classList.remove('hidden');
                 batchSec.classList.add('hidden');
-                singleBtn.className = "px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-600 text-white";
-                batchBtn.className = "px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white";
-                if (isBatchScannerRunning) toggleBatchScanner();
-                generateBarcodes();
+                btnSingle.className = "px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-600 text-white";
+                btnBatch.className = "px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white";
+                generateSingleBarcodes();
             } else {
                 singleSec.classList.add('hidden');
                 batchSec.classList.remove('hidden');
-                batchBtn.className = "px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-600 text-white";
-                singleBtn.className = "px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white";
-                if (isScannerRunning) toggleScanner();
-                renderBatchList();
+                btnBatch.className = "px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-600 text-white";
+                btnSingle.className = "px-3 py-1 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white";
+                renderBatchRows();
+                generateBatchBarcodes();
             }
         }
 
         function changeType(type) {
-            currentType = type;
-            const container = document.getElementById('dynamicInputsContainer');
+            initDynamicInputs(type);
             const formatWrapper = document.getElementById('formatSelectWrapper');
+            if(type === 'goods') {
+                formatWrapper.classList.remove('hidden');
+            } else {
+                formatWrapper.classList.add('hidden');
+            }
+            resetMultiScanProgress();
+            generateSingleBarcodes();
+        }
+
+        function setBarcodeFormat(fmt) {
+            currentBarcodeFormat = fmt;
+            document.getElementById('autoFormatIndicator').innerText = fmt === 'AUTO' ? '自動智慧判斷' : `手動鎖定: ${fmt}`;
+            document.getElementById('formatLabel').innerText = fmt === 'AUTO' ? '自動辨識 EAN-8/13' : fmt;
+            generateSingleBarcodes();
+        }
+
+        function initDynamicInputs(type) {
+            const container = document.getElementById('dynamicInputsContainer');
             container.innerHTML = '';
 
-            if (type === 'goods') {
-                formatWrapper.classList.remove('hidden');
+            if(type === 'goods') {
                 container.innerHTML = `
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">動態萬能輸入框 (Goods 條碼內容)</label>
-                    <div class="relative">
-                        <input type="text" id="dyn_goods" value="4710085213601" placeholder="請輸入條碼代碼 (支援8碼/12碼/13碼自動辨識)"
-                            class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                        <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">1组條碼</span>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">商品條碼內容與數量</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="goodsBarcode" oninput="updateFormState('goods')" value="${formState.goods.barcode}" placeholder="請輸入 8碼(EAN-8) 或 13碼(EAN-13)"
+                            class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
+                        <div class="flex items-center space-x-1.5 bg-white border border-slate-300 rounded-xl px-2.5 py-2">
+                            <span class="text-[11px] text-slate-500 font-bold">數量</span>
+                            <input type="number" id="goodsQty" value="${formState.goods.qty}" min="1" max="99" onchange="updateFormState('goods')"
+                                class="w-10 text-center text-xs font-bold text-slate-800 outline-none bg-transparent">
+                        </div>
                     </div>
                 `;
-            } else if (type === 'utility') {
-                formatWrapper.classList.add('hidden');
+            } else if(type === 'utility') {
                 container.innerHTML = `
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">動態萬能輸入框 (超商繳費單三段條碼)</label>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">繳費單三段式條碼 (Code 39)</label>
                     <div class="space-y-2">
-                        <div class="relative">
-                            <input type="text" id="dyn_code1" value="5302191280001" placeholder="第一段條碼"
-                                class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                            <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Code 1</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] font-bold text-slate-500 w-12">code1:</span>
+                            <input type="text" id="utilityCode1" oninput="updateFormState('utility')" value="${formState.utility.code1}" placeholder="第一段條碼"
+                                class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                         </div>
-                        <div class="relative">
-                            <input type="text" id="dyn_code2" value="1140930000000000012345678" placeholder="第二段條碼"
-                                class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                            <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Code 2</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] font-bold text-slate-500 w-12">code2:</span>
+                            <input type="text" id="utilityCode2" oninput="updateFormState('utility')" value="${formState.utility.code2}" placeholder="第二段條碼"
+                                class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                         </div>
-                        <div class="relative">
-                            <input type="text" id="dyn_code3" value="1234567890" placeholder="第三段條碼 (選填)"
-                                class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                            <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Code 3</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] font-bold text-slate-500 w-12">code3:</span>
+                            <input type="text" id="utilityCode3" oninput="updateFormState('utility')" value="${formState.utility.code3}" placeholder="第三段條碼 (選填)"
+                                class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                         </div>
                     </div>
                 `;
-            } else if (type === 'egtc') {
-                formatWrapper.classList.add('hidden');
+            } else if(type === 'egtc') {
                 container.innerHTML = `
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">動態萬能輸入框 (電子兌換券兩段條碼)</label>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">電子兌換券兩組條碼 (Code 39)</label>
                     <div class="space-y-2">
-                        <div class="relative">
-                            <input type="text" id="dyn_egtc1" value="99202609051234" placeholder="第一段兌換券號"
-                                class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                            <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">券號 Barcode 1</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] font-bold text-slate-500 w-20">Barcode1:</span>
+                            <input type="text" id="egtcBarcode1" oninput="updateFormState('egtc')" value="${formState.egtc.barcode1}" placeholder="第一組兌換券號"
+                                class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                         </div>
-                        <div class="relative">
-                            <input type="text" id="dyn_egtc2" value="88567890123" placeholder="第二段驗證碼"
-                                class="dynamic-input w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
-                            <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">驗證 Barcode 2</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] font-bold text-slate-500 w-20">Barcode2:</span>
+                            <input type="text" id="egtcBarcode2" oninput="updateFormState('egtc')" value="${formState.egtc.barcode2}" placeholder="第二組驗證密碼"
+                                class="flex-1 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs">
                         </div>
                     </div>
                 `;
             }
-
-            syncInputsToHidden();
-            generateBarcodes();
+            generateSingleBarcodes();
         }
 
-        function setBarcodeFormat(format) {
-            userSelectedFormat = format;
-            generateBarcodes();
+        function updateFormState(type) {
+            if(type === 'goods') {
+                formState.goods.barcode = document.getElementById('goodsBarcode')?.value || '';
+                formState.goods.qty = parseInt(document.getElementById('goodsQty')?.value || 1);
+            } else if(type === 'utility') {
+                formState.utility.code1 = document.getElementById('utilityCode1')?.value || '';
+                formState.utility.code2 = document.getElementById('utilityCode2')?.value || '';
+                formState.utility.code3 = document.getElementById('utilityCode3')?.value || '';
+            } else if(type === 'egtc') {
+                formState.egtc.barcode1 = document.getElementById('egtcBarcode1')?.value || '';
+                formState.egtc.barcode2 = document.getElementById('egtcBarcode2')?.value || '';
+            }
+            generateSingleBarcodes();
         }
 
-        function syncInputsToHidden() {
-            if (currentType === 'goods') {
-                const el = document.getElementById('dyn_goods');
-                if (el) {
-                    const val = el.value.trim();
-                    document.getElementById('inputUniversal').value = val;
-                }
-            } else if (currentType === 'utility') {
-                const c1 = document.getElementById('dyn_code1');
-                const c2 = document.getElementById('dyn_code2');
-                const c3 = document.getElementById('dyn_code3');
-                if (c1) document.getElementById('inputCode1').value = c1.value.trim();
-                if (c2) document.getElementById('inputCode2').value = c2.value.trim();
-                if (c3) document.getElementById('inputCode3').value = c3.value.trim();
-            } else if (currentType === 'egtc') {
-                const e1 = document.getElementById('dyn_egtc1');
-                const e2 = document.getElementById('dyn_egtc2');
-                if (e1) document.getElementById('inputEgtcBarcode1').value = e1.value.trim();
-                if (e2) document.getElementById('inputEgtcBarcode2').value = e2.value.trim();
-            }
-        }
-
-        function autoSyncToBatchList() {
-            let codeVal = '';
-
-            if (currentType === 'goods') {
-                codeVal = document.getElementById('inputUniversal').value.trim();
-            } else if (currentType === 'utility') {
-                codeVal = document.getElementById('inputCode1').value.trim();
-            } else if (currentType === 'egtc') {
-                codeVal = document.getElementById('inputEgtcBarcode1').value.trim();
+        function appendCurrentToBatch(isAuto = false) {
+            const type = document.getElementById('selectType').value;
+            if (type !== 'goods') {
+                if(!isAuto) showToast("批量清單目前僅支援商品條碼(Goods EAN-8/13)！");
+                return;
             }
 
-            if (!codeVal) return;
-
-            const resolved = getAutoBarcodeFormat(codeVal, userSelectedFormat);
-            const currentNote = document.getElementById('singleNoteInput').value;
-            const showNote = document.getElementById('singleShowNote').checked;
-
-            const existingAutoIndex = batchList.findIndex(item => item.isAutoSynced);
-            if (existingAutoIndex !== -1) {
-                batchList[existingAutoIndex].code = codeVal;
-                batchList[existingAutoIndex].note = currentNote;
-                batchList[existingAutoIndex].showNote = showNote;
-                batchList[existingAutoIndex].formatPreference = userSelectedFormat;
-                batchList[existingAutoIndex].resolvedFormat = resolved.format;
-                batchList[existingAutoIndex].validatedCode = resolved.code;
-            } else {
-                batchList.unshift({
-                    id: 'auto_sync_item_' + Date.now(),
-                    code: codeVal,
-                    note: currentNote,
-                    showNote: showNote,
-                    qty: 1,
-                    formatPreference: userSelectedFormat,
-                    resolvedFormat: resolved.format,
-                    validatedCode: resolved.code,
-                    isAutoSynced: true
-                });
+            const codeVal = formState.goods.barcode.trim();
+            const qtyVal = formState.goods.qty;
+            if ((codeVal.length !== 8 && codeVal.length !== 13) || !/^\d+$/.test(codeVal)) {
+                if(!isAuto) showToast("條碼錯誤：商品條碼必須為 8 碼或 13 碼純數字！");
+                return;
             }
 
+            batchItems.push({
+                code: codeVal,
+                qty: qtyVal,
+                note: ""
+            });
+
+            renderBatchRows();
             if (currentMode === 'batch') {
-                renderBatchList();
+                generateBatchBarcodes();
             }
+            showToast(isAuto ? "已自動追加至批量清單末端！" : "已成功手動追加至批量清單末端！");
         }
 
         function fillSampleData() {
-            if (currentType === 'goods') {
-                document.getElementById('dyn_goods').value = '471008521360';
-                userSelectedFormat = 'AUTO';
+            const type = document.getElementById('selectType').value;
+            if(type === 'goods') {
+                formState.goods.barcode = "47100123";
+                formState.goods.qty = 2;
+                setBarcodeFormat('AUTO');
                 document.getElementById('selectBarcodeFormat').value = 'AUTO';
-            } else if (currentType === 'utility') {
-                document.getElementById('dyn_code1').value = '5302191280001';
-                document.getElementById('dyn_code2').value = '1140930000000000012345678';
-                document.getElementById('dyn_code3').value = '1234567890';
-            } else if (currentType === 'egtc') {
-                document.getElementById('dyn_egtc1').value = '99202609051234';
-                document.getElementById('dyn_egtc2').value = '88567890123';
+            } else if(type === 'utility') {
+                formState.utility.code1 = "120521843";
+                formState.utility.code2 = "3145599810110063";
+                formState.utility.code3 = "";
+            } else if(type === 'egtc') {
+                formState.egtc.barcode1 = "7500088501181646";
+                formState.egtc.barcode2 = "GKGE047D";
             }
-            syncInputsToHidden();
-            generateBarcodes();
-            autoSyncToBatchList();
-            showToast('已載入預設範例並自動計算 EAN 檢查碼');
+            initDynamicInputs(type);
+            resetMultiScanProgress();
         }
 
-        function generateBarcodes() {
+        function generateSingleBarcodes() {
+            const type = document.getElementById('selectType').value;
+            const errorMsg = document.getElementById('barcodeErrorMsg');
             const singleWrapper = document.getElementById('singleBarcodeWrapper');
             const utilityWrapper = document.getElementById('utilityBarcodesWrapper');
             const egtcWrapper = document.getElementById('egtcBarcodesWrapper');
-            const errorMsg = document.getElementById('barcodeErrorMsg');
-            const noteDisplay = document.getElementById('singleNoteDisplay');
-            const noteInputVal = document.getElementById('singleNoteInput').value.trim();
-            const showNoteChecked = document.getElementById('singleShowNote').checked;
+            const qrcodeWrapper = document.getElementById('qrcodeWrapper');
+            const qrPlaceholderMsg = document.getElementById('qrPlaceholderMsg');
+            const qrDataText = document.getElementById('qrDataText');
+            const qrSchemaLabel = document.getElementById('qrSchemaLabel');
+            const saveBtn = document.getElementById('saveBtn');
+            const appendBtn = document.getElementById('appendBatchBtn');
 
-            // 控制備註顯示狀態 (不包含在二維條碼編碼內)
-            if (showNoteChecked && noteInputVal !== '') {
-                noteDisplay.innerText = noteInputVal;
-                noteDisplay.classList.remove('hidden');
-            } else {
-                noteDisplay.classList.add('hidden');
-            }
-            
+            errorMsg.classList.add('hidden');
             singleWrapper.classList.add('hidden');
             utilityWrapper.classList.add('hidden');
             egtcWrapper.classList.add('hidden');
-            errorMsg.classList.add('hidden');
+            qrcodeWrapper.classList.remove('hidden');
+            qrPlaceholderMsg.classList.add('hidden');
+            qrDataText.classList.remove('hidden');
+            saveBtn.removeAttribute('disabled');
+            saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            appendBtn.removeAttribute('disabled');
+            appendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-            let qrContentString = "";
+            let qrPayloadObj = null;
 
             try {
-                if (currentType === 'goods') {
+                if(type === 'goods') {
                     singleWrapper.classList.remove('hidden');
-                    const val = document.getElementById('inputUniversal').value || '00000000';
-                    
-                    const resolved = getAutoBarcodeFormat(val, userSelectedFormat);
-                    
-                    const numericBarcode = /^\d+$/.test(resolved.code) ? Number(resolved.code) : resolved.code;
-                    // QR Code 純粹編碼商品代碼與數量，備註不寫入編碼
-                    const qrJsonObj = {
-                        "Goods": [{
-                            "Commodity": [{
-                                "Device": "POS",
-                                "Barcode": numericBarcode,
-                                "Quantity": 1
-                            }]
-                        }]
-                    };
-                    qrContentString = JSON.stringify(qrJsonObj);
+                    qrSchemaLabel.innerText = "Goods JSON Schema";
+                    const val = formState.goods.barcode.trim();
+                    const qtyVal = formState.goods.qty;
 
-                    let formatText = `${userSelectedFormat === 'AUTO' ? 'AUTO (' + resolved.format + ')' : userSelectedFormat}`;
-                    if (!resolved.valid) {
-                        formatText += ' ⚠️ 檢查碼異常';
+                    let activeFormat = currentBarcodeFormat;
+                    if(activeFormat === 'AUTO') {
+                        if (val.length === 8 && /^\d+$/.test(val)) {
+                            activeFormat = 'EAN8';
+                            document.getElementById('formatLabel').innerText = "自動偵測: EAN-8 (8碼)";
+                        } else if (val.length === 13 && /^\d+$/.test(val)) {
+                            activeFormat = 'EAN13';
+                            document.getElementById('formatLabel').innerText = "自動偵測: EAN-13 (13碼)";
+                        } else {
+                            activeFormat = 'INVALID';
+                        }
+                    } else {
+                        document.getElementById('formatLabel').innerText = `手動鎖定: ${activeFormat}`;
                     }
-                    document.getElementById('formatLabel').innerText = formatText;
 
-                    JsBarcode("#barcode1D", resolved.code, {
-                        format: resolved.format,
+                    const isEan8Valid = (activeFormat === 'EAN8' && val.length === 8 && /^\d+$/.test(val));
+                    const isEan13Valid = (activeFormat === 'EAN13' && val.length === 13 && /^\d+$/.test(val));
+
+                    if (!isEan8Valid && !isEan13Valid) {
+                        singleWrapper.classList.add('hidden');
+                        qrcodeWrapper.classList.add('hidden');
+                        qrPlaceholderMsg.classList.remove('hidden');
+                        qrDataText.classList.add('hidden');
+                        errorMsg.innerText = `條碼錯誤：商品條碼格式限定 EAN-8 (8碼純數字) 或 EAN-13 (13碼純數字)。目前輸入為「${val}」(共 ${val.length} 碼)。`;
+                        errorMsg.classList.remove('hidden');
+                        saveBtn.setAttribute('disabled', 'true');
+                        saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        appendBtn.setAttribute('disabled', 'true');
+                        appendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        return;
+                    }
+
+                    qrPayloadObj = {
+                        "Payment": [
+                            {
+                                "Goods": [
+                                    {
+                                        "Device": "POS",
+                                        "Barcode": Number(val),
+                                        "Quantity": qtyVal
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+
+                    JsBarcode("#barcode1D", val, {
+                        format: activeFormat,
                         lineColor: "#0f172a",
                         width: 2,
                         height: 70,
                         displayValue: true,
                         fontSize: 14,
-                        margin: 10
+                        margin: 5
                     });
-                } else if (currentType === 'utility') {
-                    utilityWrapper.classList.remove('hidden');
-                    const c1 = document.getElementById('inputCode1').value || '000000000';
-                    const c2 = document.getElementById('inputCode2').value || '0000000000000000';
-                    const c3 = document.getElementById('inputCode3').value;
-                    
-                    qrContentString = `UTILITY:${c1}|${c2}|${c3}`;
 
-                    JsBarcode("#barcodeCode1", c1, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 50, displayValue: true, fontSize: 12, margin: 5 });
-                    JsBarcode("#barcodeCode2", c2, { format: "CODE39", lineColor: "#0f172a", width: 1.5, height: 50, displayValue: true, fontSize: 12, margin: 5 });
+                } else if(type === 'utility') {
+                    utilityWrapper.classList.remove('hidden');
+                    document.getElementById('formatLabel').innerText = "CODE39 (繳費單三段式)";
+                    qrSchemaLabel.innerText = "Utility Ordinary JSON Schema";
+                    
+                    const c1 = formState.utility.code1.trim();
+                    const c2 = formState.utility.code2.trim();
+                    const c3 = formState.utility.code3.trim();
+                    
+                    qrPayloadObj = {
+                        "Utility": [
+                            {
+                                "Ordinary": [
+                                    {
+                                        "Device": "POS",
+                                        "code1": c1,
+                                        "code2": c2,
+                                        "code3": c3
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+
+                    if (c1) JsBarcode("#barcodeCode1", c1, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 45, displayValue: true, fontSize: 12, margin: 2 });
+                    if (c2) JsBarcode("#barcodeCode2", c2, { format: "CODE39", lineColor: "#0f172a", width: 1.5, height: 45, displayValue: true, fontSize: 12, margin: 2 });
                     
                     const wrapperC3 = document.getElementById('wrapperCode3');
-                    if (c3.trim() !== '') {
+                    if(c3) {
                         wrapperC3.classList.remove('hidden');
-                        JsBarcode("#barcodeCode3", c3, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 50, displayValue: true, fontSize: 12, margin: 5 });
+                        JsBarcode("#barcodeCode3", c3, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 45, displayValue: true, fontSize: 12, margin: 2 });
                     } else {
                         wrapperC3.classList.add('hidden');
                     }
-                } else if (currentType === 'egtc') {
+                } else if(type === 'egtc') {
                     egtcWrapper.classList.remove('hidden');
-                    const e1 = document.getElementById('inputEgtcBarcode1').value || '0000000000';
-                    const e2 = document.getElementById('inputEgtcBarcode2').value || '0000000000';
+                    document.getElementById('formatLabel').innerText = "CODE39 (電子兌換券)";
+                    qrSchemaLabel.innerText = "EGTC JSON Schema";
+
+                    const e1 = formState.egtc.barcode1.trim();
+                    const e2 = formState.egtc.barcode2.trim();
                     
-                    qrContentString = `EGTC:${e1}|${e2}`;
-
-                    JsBarcode("#barcodeEgtc1", e1, { format: "CODE128", lineColor: "#0f172a", width: 2, height: 60, displayValue: true, fontSize: 13, margin: 8 });
-                    JsBarcode("#barcodeEgtc2", e2, { format: "CODE128", lineColor: "#0f172a", width: 2, height: 60, displayValue: true, fontSize: 13, margin: 8 });
-                }
-
-                const qrContainer = document.getElementById('qrcode');
-                qrContainer.innerHTML = '';
-                new QRCode(qrContainer, {
-                    text: qrContentString,
-                    width: 130,
-                    height: 130,
-                    colorDark: "#0f172a",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-                document.getElementById('qrDataText').innerText = qrContentString;
-
-            } catch (err) {
-                console.error(err);
-                errorMsg.classList.remove('hidden');
-                errorMsg.innerText = "條碼格式或內容有誤，請確認字元長度與檢查碼是否相符。";
-            }
-        }
-
-        function saveCurrentBarcode() {
-            let itemData = {
-                id: Date.now().toString(),
-                type: currentType,
-                date: new Date().toLocaleString(),
-                format: userSelectedFormat,
-                note: document.getElementById('singleNoteInput').value,
-                showNote: document.getElementById('singleShowNote').checked
-            };
-
-            if (currentType === 'goods') {
-                itemData.code = document.getElementById('inputUniversal').value;
-                itemData.title = `商品條碼 (${document.getElementById('formatLabel').innerText})`;
-            } else if (currentType === 'utility') {
-                itemData.code1 = document.getElementById('inputCode1').value;
-                itemData.code2 = document.getElementById('inputCode2').value;
-                itemData.code3 = document.getElementById('inputCode3').value;
-                itemData.title = `繳費單三段條碼`;
-            } else if (currentType === 'egtc') {
-                itemData.egtc1 = document.getElementById('inputEgtcBarcode1').value;
-                itemData.egtc2 = document.getElementById('inputEgtcBarcode2').value;
-                itemData.title = `電子兌換券條碼`;
-            }
-
-            savedBarcodes.unshift(itemData);
-            localStorage.setItem('seven_pos_saved_barcodes', JSON.stringify(savedBarcodes));
-            updateSavedCount();
-            showToast('已成功儲存至清單！');
-        }
-
-        function autoSyncAndSwitchToBatch() {
-            autoSyncToBatchList();
-            switchMode('batch');
-            showToast('已自動同步並切換至批量清單');
-        }
-
-        function updateSavedCount() {
-            document.getElementById('savedCountBadge').innerText = savedBarcodes.length;
-        }
-
-        function openSavedModal() {
-            const listContainer = document.getElementById('savedItemsList');
-            listContainer.innerHTML = '';
-
-            if (savedBarcodes.length === 0) {
-                listContainer.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs">目前尚無儲存的條碼</div>`;
-            } else {
-                savedBarcodes.forEach((item, index) => {
-                    let detailHtml = '';
-                    if (item.type === 'goods') {
-                        detailHtml = `<p class="font-mono text-xs font-bold text-slate-800">${item.code}</p>`;
-                    } else if (item.type === 'utility') {
-                        detailHtml = `
-                            <p class="font-mono text-[11px] text-slate-700">1: ${item.code1}</p>
-                            <p class="font-mono text-[11px] text-slate-700">2: ${item.code2}</p>
-                        `;
-                    } else if (item.type === 'egtc') {
-                        detailHtml = `
-                            <p class="font-mono text-[11px] text-slate-700">券號: ${item.egtc1}</p>
-                            <p class="font-mono text-[11px] text-slate-700">驗證: ${item.egtc2}</p>
-                        `;
-                    }
-
-                    const noteHtml = item.note ? `<p class="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded inline-block font-semibold mt-1">備註: ${item.note}</p>` : '';
-
-                    const div = document.createElement('div');
-                    div.className = "bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs";
-                    div.innerHTML = `
-                        <div class="space-y-1">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-[10px] bg-slate-900 text-white px-2 py-0.5 rounded font-bold">${item.title}</span>
-                                <span class="text-[10px] text-slate-400">${item.date}</span>
-                            </div>
-                            ${detailHtml}
-                            ${noteHtml}
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="loadSavedItem(${index})" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">載入</button>
-                            <button onclick="deleteSavedItem(${index})" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg text-xs transition">✕</button>
-                        </div>
-                    `;
-                    listContainer.appendChild(div);
-                });
-            }
-
-            document.getElementById('savedModal').classList.remove('hidden');
-        }
-
-        function closeSavedModal() {
-            document.getElementById('savedModal').classList.add('hidden');
-        }
-
-        function clearAllSaved() {
-            savedBarcodes = [];
-            localStorage.removeItem('seven_pos_saved_barcodes');
-            updateSavedCount();
-            openSavedModal();
-            showToast('已清空全部儲存的條碼');
-        }
-
-        function loadSavedItem(index) {
-            const item = savedBarcodes[index];
-            document.getElementById('selectType').value = item.type;
-            changeType(item.type);
-
-            if (item.note !== undefined) {
-                document.getElementById('singleNoteInput').value = item.note;
-            }
-            if (item.showNote !== undefined) {
-                document.getElementById('singleShowNote').checked = item.showNote;
-            }
-
-            if (item.type === 'goods') {
-                document.getElementById('dyn_goods').value = item.code;
-                userSelectedFormat = item.format || 'AUTO';
-                document.getElementById('selectBarcodeFormat').value = item.format || 'AUTO';
-            } else if (item.type === 'utility') {
-                document.getElementById('dyn_code1').value = item.code1;
-                document.getElementById('dyn_code2').value = item.code2;
-                document.getElementById('dyn_code3').value = item.code3 || '';
-            } else if (item.type === 'egtc') {
-                document.getElementById('dyn_egtc1').value = item.egtc1;
-                document.getElementById('dyn_egtc2').value = item.egtc2;
-            }
-
-            syncInputsToHidden();
-            generateBarcodes();
-            closeSavedModal();
-            showToast('已載入該筆條碼設定');
-        }
-
-        function deleteSavedItem(index) {
-            savedBarcodes.splice(index, 1);
-            localStorage.setItem('seven_pos_saved_barcodes', JSON.stringify(savedBarcodes));
-            updateSavedCount();
-            openSavedModal();
-            showToast('已刪除該筆條碼');
-        }
-
-        function toggleBatchScannerSection() {
-            isBatchScannerSectionOpen = !isBatchScannerSectionOpen;
-            const wrapper = document.getElementById('batchInputScannerWrapper');
-            const toggleText = document.getElementById('batchScannerToggleText');
-            const toggleBtn = document.getElementById('batchScannerToggleBtn');
-
-            if (isBatchScannerSectionOpen) {
-                wrapper.classList.remove('hidden');
-                toggleText.innerText = "收合批量條碼輸入與相機掃描";
-                toggleBtn.className = "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs";
-            } else {
-                wrapper.classList.add('hidden');
-                toggleText.innerText = "展開批量條碼輸入與相機掃描";
-                toggleBtn.className = "bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-xs";
-                if (isBatchScannerRunning) {
-                    toggleBatchScanner();
-                }
-            }
-        }
-
-        function setBatchDisplayMode(mode) {
-            batchDisplayMode = mode;
-            const bBtn = document.getElementById('batchDisplayBarcodeBtn');
-            const qBtn = document.getElementById('batchDisplayQrcodeBtn');
-
-            if (mode === 'barcode') {
-                bBtn.className = "px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-600 text-white transition";
-                qBtn.className = "px-2.5 py-1 text-[11px] font-bold rounded text-slate-600 hover:bg-slate-100 transition";
-            } else {
-                qBtn.className = "px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-600 text-white transition";
-                bBtn.className = "px-2.5 py-1 text-[11px] font-bold rounded text-slate-600 hover:bg-slate-100 transition";
-            }
-            renderBatchList();
-            showToast(`已切換批量顯示模式: ${mode === 'barcode' ? '一維條碼' : '二維 QR 碼'}`);
-        }
-
-        function renderBatchList() {
-            const container = document.getElementById('batchItemsContainer');
-            container.innerHTML = '';
-            document.getElementById('batchCountBadge').innerText = batchList.length;
-
-            if (batchList.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 text-xs bg-white rounded-xl border border-slate-200">目前尚無批量條碼項目，請於上方展開輸入或匯入。</div>`;
-                return;
-            }
-
-            batchList.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = "batch-item bg-white p-4 rounded-xl border border-slate-200 space-y-3 shadow-2xs relative";
-                
-                const pref = item.formatPreference || 'AUTO';
-                const resolved = getAutoBarcodeFormat(item.code, pref);
-                item.resolvedFormat = resolved.format;
-                item.validatedCode = resolved.code;
-                const isShowNote = item.showNote !== false;
-
-                let contentHtml = '';
-                if (batchDisplayMode === 'barcode') {
-                    let warningTag = !resolved.valid ? `<span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ 檢查碼不符</span>` : '';
-                    let noteBannerHtml = (isShowNote && item.note) ? `<div class="text-xs font-bold text-slate-800 bg-amber-100/70 border border-amber-300/60 py-1 px-3 rounded-md mb-2 inline-block">${item.note}</div>` : '';
-
-                    contentHtml = `
-                        <div class="text-center py-2 bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden flex flex-col items-center">
-                            ${noteBannerHtml}
-                            <svg id="batch_svg_${item.id}" class="max-w-full mx-auto"></svg>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px]">
-                            <div class="flex items-center space-x-1">
-                                <span class="font-mono font-bold text-slate-700">${resolved.code}</span>
-                                ${warningTag}
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <label class="flex items-center space-x-1 cursor-pointer text-[10px] text-slate-600">
-                                    <input type="checkbox" ${isShowNote ? 'checked' : ''} onchange="toggleBatchItemNote('${item.id}', this.checked)" class="rounded text-emerald-600 w-3.5 h-3.5">
-                                    <span>顯示備註</span>
-                                </label>
-                                <select onchange="updateBatchFormat('${item.id}', this.value)" class="text-[10px] bg-white border border-slate-200 rounded px-1.5 py-0.5 font-bold text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500">
-                                    <option value="AUTO" ${pref==='AUTO'?'selected':''}>⚡ AUTO (${resolved.format})</option>
-                                    <option value="EAN8" ${pref==='EAN8'?'selected':''}>EAN-8</option>
-                                    <option value="EAN13" ${pref==='EAN13'?'selected':''}>EAN-13</option>
-                                    <option value="CODE128" ${pref==='CODE128'?'selected':''}>CODE128</option>
-                                    <option value="CODE39" ${pref==='CODE39'?'selected':''}>CODE39</option>
-                                </select>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    // 二維條碼編碼內容保持純淨，備註不寫入編碼內
-                    const qrJsonObj = {
-                        "Goods": [{
-                            "Commodity": [{
-                                "Device": "POS",
-                                "Barcode": isNaN(resolved.code) ? resolved.code : Number(resolved.code),
-                                "Quantity": Number(item.qty) || 1
-                            }]
-                        }]
-                    };
-                    const qrJsonString = JSON.stringify(qrJsonObj);
-                    let noteBannerHtml = (isShowNote && item.note) ? `<div class="text-xs font-bold text-slate-800 bg-amber-100/70 border border-amber-300/60 py-1 px-3 rounded-md inline-block">${item.note}</div>` : '';
-
-                    contentHtml = `
-                        <div class="flex flex-col items-center justify-center py-3 bg-slate-50/50 rounded-lg border border-slate-100 space-y-2">
-                            ${noteBannerHtml}
-                            <div id="batch_qr_${item.id}" class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs inline-block"></div>
-                            <span class="font-mono text-[10px] text-slate-500 break-all text-center px-2 max-w-xs">${qrJsonString}</span>
-                        </div>
-                    `;
-                }
-
-                div.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-5 h-5 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-[10px] font-black">${index + 1}</span>
-                            <input type="text" value="${item.note || ''}" placeholder="點此修改備註..." onchange="updateBatchNoteText('${item.id}', this.value)"
-                                class="text-xs font-bold text-slate-700 bg-transparent border-b border-dashed border-slate-300 focus:border-emerald-600 outline-none px-1 py-0.5 max-w-[150px]">
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <div class="flex items-center space-x-1">
-                                <span class="text-[11px] text-slate-500">數量:</span>
-                                <input type="number" value="${item.qty}" min="1" max="99" onchange="updateBatchQty('${item.id}', this.value)"
-                                    class="w-12 text-center text-xs font-bold bg-slate-50 border border-slate-200 py-1 rounded-md outline-none">
-                            </div>
-                            <button onclick="removeBatchItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs">✕</button>
-                        </div>
-                    </div>
-                    ${contentHtml}
-                `;
-                container.appendChild(div);
-
-                setTimeout(() => {
-                    try {
-                        if (batchDisplayMode === 'barcode') {
-                            JsBarcode(`#batch_svg_${item.id}`, resolved.code, {
-                                format: resolved.format,
-                                lineColor: "#0f172a",
-                                width: 1.8,
-                                height: 50,
-                                displayValue: true,
-                                fontSize: 12,
-                                margin: 5
-                            });
-                        } else {
-                            const qrEl = document.getElementById(`batch_qr_${item.id}`);
-                            if (qrEl) {
-                                qrEl.innerHTML = '';
-                                const qrJsonObj = {
-                                    "Goods": [{
-                                        "Commodity": [{
-                                            "Device": "POS",
-                                            "Barcode": isNaN(resolved.code) ? resolved.code : Number(resolved.code),
-                                            "Quantity": Number(item.qty) || 1
-                                        }]
-                                    }]
-                                };
-                                new QRCode(qrEl, {
-                                    text: JSON.stringify(qrJsonObj),
-                                    width: 120,
-                                    height: 120,
-                                    colorDark: "#0f172a",
-                                    colorLight: "#ffffff",
-                                    correctLevel: QRCode.CorrectLevel.M
-                                });
+                    qrPayloadObj = {
+                        "Payment": [
+                            {
+                                "EGTC": [
+                                    {
+                                        "Device": "POS",
+                                        "Barcode1": e1,
+                                        "Barcode2": e2
+                                    }
+                                ]
                             }
-                        }
-                    } catch (e) {
-                        console.error("Batch render error:", e);
-                    }
-                }, 10);
-            });
-        }
+                        ]
+                    };
 
-        function updateBatchFormat(id, format) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.formatPreference = format;
-                renderBatchList();
-                showToast(`已更新該筆一維條碼格式對應: ${format}`);
-            }
-        }
-
-        function updateBatchQty(id, qty) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.qty = parseInt(qty) || 1;
-                renderBatchList();
-            }
-        }
-
-        function updateBatchNoteText(id, noteVal) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.note = noteVal;
-                renderBatchList();
-                showToast('已更新備註');
-            }
-        }
-
-        function toggleBatchItemNote(id, show) {
-            const item = batchList.find(i => i.id === id);
-            if (item) {
-                item.showNote = show;
-                renderBatchList();
-            }
-        }
-
-        function removeBatchItem(id) {
-            batchList = batchList.filter(i => i.id !== id);
-            renderBatchList();
-            showToast('已移除該筆項目');
-        }
-
-        function clearBatchList() {
-            batchList = [];
-            renderBatchList();
-            showToast('已清空批量清單');
-        }
-
-        function addBatchItemQuick() {
-            const codeInput = document.getElementById('quickBatchCode');
-            const noteInput = document.getElementById('quickBatchNote');
-            const qtyInput = document.getElementById('quickBatchQty');
-
-            const code = codeInput.value.trim();
-            if (!code) {
-                showToast('請輸入條碼代碼');
-                return;
-            }
-
-            const resolved = getAutoBarcodeFormat(code, 'AUTO');
-
-            batchList.push({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                code: code,
-                note: noteInput.value.trim(),
-                showNote: true,
-                qty: parseInt(qtyInput.value) || 1,
-                formatPreference: 'AUTO',
-                resolvedFormat: resolved.format,
-                validatedCode: resolved.code
-            });
-
-            codeInput.value = '';
-            noteInput.value = '';
-            qtyInput.value = '1';
-            renderBatchList();
-            showToast('已成功加入批量清單');
-        }
-
-        function fillBatchSample() {
-            batchList = [
-                { id: 'b1', code: '471008521360', note: '特惠指定品A', showNote: true, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4710085213601' },
-                { id: 'b2', code: '20719128', note: '門市活動贈品B', showNote: true, qty: 2, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '20719128' },
-                { id: 'b3', code: '4710108', note: '常溫飲料區C', showNote: false, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN8', validatedCode: '47101083' },
-                { id: 'b4', code: '4711234567890', note: '進口零食D', showNote: true, qty: 1, formatPreference: 'AUTO', resolvedFormat: 'EAN13', validatedCode: '4711234567890' }
-            ];
-            renderBatchList();
-            showToast('已載入含備註的批量範例');
-        }
-
-        function importBatchText() {
-            const text = document.getElementById('batchTextarea').value.trim();
-            if (!text) {
-                showToast('請輸入要匯入的文字');
-                return;
-            }
-
-            const lines = text.split('\n');
-            let addedCount = 0;
-
-            lines.forEach(line => {
-                const parts = line.split(',').map(p => p.trim());
-                if (parts[0]) {
-                    const code = parts[0];
-                    const note = parts[1] && isNaN(parts[1]) ? parts[1] : '';
-                    const qty = parseInt(parts[parts.length - 1]) || 1;
-                    const resolved = getAutoBarcodeFormat(code, 'AUTO');
-
-                    batchList.push({
-                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                        code: code,
-                        note: note,
-                        showNote: true,
-                        qty: qty,
-                        formatPreference: 'AUTO',
-                        resolvedFormat: resolved.format,
-                        validatedCode: resolved.code
-                    });
-                    addedCount++;
+                    JsBarcode("#barcodeEgtc1", e1, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 50, displayValue: true, fontSize: 12, margin: 3 });
+                    JsBarcode("#barcodeEgtc2", e2, { format: "CODE39", lineColor: "#0f172a", width: 1.8, height: 50, displayValue: true, fontSize: 12, margin: 3 });
                 }
-            });
 
-            document.getElementById('batchTextarea').value = '';
-            renderBatchList();
-            showToast(`成功匯入 ${addedCount} 筆項目`);
+                const qrTextVal = JSON.stringify(qrPayloadObj);
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById('qrcode'), {
+                    text: qrTextVal,
+                    width: 140,
+                    height: 140,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+                document.getElementById('qrDataText').innerText = qrTextVal;
+
+            } catch (e) {
+                errorMsg.classList.remove('hidden');
+                singleWrapper.classList.add('hidden');
+                qrcodeWrapper.classList.add('hidden');
+                qrPlaceholderMsg.classList.remove('hidden');
+                qrDataText.classList.add('hidden');
+            }
+        }
+
+        async function setupCameraCapabilities(html5QrInstance, isBatch = false) {
+            try {
+                const videoElement = document.querySelector(isBatch ? '#batchReader video' : '#reader video');
+                if (videoElement && videoElement.srcObject) {
+                    const stream = videoElement.srcObject;
+                    const track = stream.getVideoTracks()[0];
+                    if (isBatch) batchTrackInstance = track;
+                    else trackInstance = track;
+
+                    const capabilities = track.getCapabilities();
+                    const advancedSettings = {};
+                    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                        advancedSettings.focusMode = 'continuous';
+                    }
+                    if (Object.keys(advancedSettings).length > 0) {
+                        await track.applyConstraints({ advanced: [advancedSettings] }).catch(e => {});
+                    }
+
+                    const torchBtn = document.getElementById(isBatch ? 'batchTorchBtn' : 'torchBtn');
+                    if (capabilities.torch && torchBtn) torchBtn.classList.remove('hidden');
+                    else if (torchBtn) torchBtn.classList.add('hidden');
+                }
+            } catch (err) {}
+        }
+
+        async function toggleFlashlight() {
+            if (!trackInstance) return;
+            try {
+                const constraints = trackInstance.getConstraints();
+                const currentTorch = constraints.advanced && constraints.advanced[0] && constraints.advanced[0].torch;
+                const newTorchState = !currentTorch;
+                await trackInstance.applyConstraints({ advanced: [{ torch: newTorchState }] });
+                const torchBtn = document.getElementById('torchBtn');
+                torchBtn.innerText = newTorchState ? "關閉手電筒補光" : "開啟手電筒補光";
+                torchBtn.className = newTorchState ? "text-xs bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-bold transition" : "text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold transition";
+            } catch (err) {}
+        }
+
+        async function toggleBatchFlashlight() {
+            if (!batchTrackInstance) return;
+            try {
+                const constraints = batchTrackInstance.getConstraints();
+                const currentTorch = constraints.advanced && constraints.advanced[0] && constraints.advanced[0].torch;
+                const newTorchState = !currentTorch;
+                await batchTrackInstance.applyConstraints({ advanced: [{ torch: newTorchState }] });
+                const torchBtn = document.getElementById('batchTorchBtn');
+                torchBtn.innerText = newTorchState ? "關閉手電筒補光" : "開啟手電筒補光";
+                torchBtn.className = newTorchState ? "text-xs bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-bold transition" : "text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold transition";
+            } catch (err) {}
+        }
+
+        function resetMultiScanProgress() {
+            multiScanStep = 0;
+            updateMultiScanPrompt();
+        }
+
+        function updateMultiScanPrompt() {
+            const type = document.getElementById('selectType').value;
+            const statusIndicator = document.getElementById('multiScanStatusBar');
+            const promptText = document.getElementById('multiScanPromptText');
+
+            if (type === 'goods') {
+                statusIndicator.classList.add('hidden');
+                return;
+            }
+
+            statusIndicator.classList.remove('hidden');
+            if (type === 'utility') {
+                if (multiScanStep === 0) promptText.innerText = "多段掃描進行中：請依序掃描繳費單 【第一段條碼 (Code 1)】";
+                else if (multiScanStep === 1) promptText.innerText = "多段掃描進行中：請依序掃描繳費單 【第二段條碼 (Code 2)】";
+                else if (multiScanStep === 2) promptText.innerText = "多段掃描進行中：請依序掃描繳費單 【第三段條碼 (Code 3，選填)】";
+                else promptText.innerText = "繳費單三段條碼已全數掃描完成！";
+            } else if (type === 'egtc') {
+                if (multiScanStep === 0) promptText.innerText = "多段掃描進行中：請依序掃描電子兌換券 【第一組條碼 (Barcode 1)】";
+                else if (multiScanStep === 1) promptText.innerText = "多段掃描進行中：請依序掃描電子兌換券 【第二組驗證碼 (Barcode 2)】";
+                else promptText.innerText = "電子兌換券兩組條碼已全數掃描完成！";
+            }
         }
 
         function toggleScanner() {
             const container = document.getElementById('scannerContainer');
             const btnText = document.getElementById('scannerBtnText');
 
-            if (!isScannerRunning) {
+            if(isScannerRunning) {
+                if(html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        container.classList.add('hidden');
+                        btnText.innerText = "開啟連續掃描";
+                        isScannerRunning = false;
+                        trackInstance = null;
+                        document.getElementById('torchBtn').classList.add('hidden');
+                        document.getElementById('multiScanStatusBar').classList.add('hidden');
+                    }).catch(err => {});
+                }
+            } else {
                 container.classList.remove('hidden');
                 btnText.innerText = "關閉相機";
                 isScannerRunning = true;
+                
+                const type = document.getElementById('selectType').value;
+                if(type !== 'goods' && multiScanStep === 0) {
+                    multiScanStep = 0;
+                }
+                updateMultiScanPrompt();
 
                 html5QrCode = new Html5Qrcode("reader");
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 150 } },
-                    (decodedText, decodedResult) => {
-                        document.getElementById('scanFeedback').innerText = `已辨識: ${decodedText}`;
-                        if (currentType === 'goods') {
-                            const el = document.getElementById('dyn_goods');
-                            if (el) el.value = decodedText;
-                        } else if (currentType === 'utility') {
-                            const el = document.getElementById('dyn_code1');
-                            if (el) el.value = decodedText;
-                        } else if (currentType === 'egtc') {
-                            const el = document.getElementById('dyn_egtc1');
-                            if (el) el.value = decodedText;
-                        }
-                        syncInputsToHidden();
-                        generateBarcodes();
-                        autoSyncToBatchList();
-                        showToast(`成功掃描並自動同步: ${decodedText}`);
-                    },
-                    (errorMessage) => {}
-                ).catch(err => {
-                    console.error("Camera start error:", err);
-                    showToast('無法啟動相機權限');
-                    toggleScanner();
-                });
-            } else {
-                if (html5QrCode) {
-                    html5QrCode.stop().then(() => {
-                        container.classList.add('hidden');
-                        btnText.innerText = "開啟相機連續掃描";
-                        isScannerRunning = false;
-                    }).catch(err => console.error("Stop error", err));
-                } else {
+                
+                const isLandscape = window.innerWidth > window.innerHeight;
+                const qrBoxSize = isLandscape ? { width: 320, height: 160 } : { width: 280, height: 220 };
+
+                const qrConfig = { 
+                    fps: 25, 
+                    qrbox: qrBoxSize,
+                    aspectRatio: isLandscape ? 1.777778 : 1.0,
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.CODE_39
+                    ]
+                };
+
+                html5QrCode.start({ facingMode: "environment" }, qrConfig, (decodedText) => {
+                    const now = Date.now();
+                    if (decodedText === lastScannedText && now - lastScannedTime < 1000) return;
+                    lastScannedText = decodedText;
+                    lastScannedTime = now;
+
+                    playBeep();
+                    document.getElementById('scanFeedback').innerText = `成功辨識: ${decodedText}`;
+                    autoFillScannedText(decodedText);
+                    setTimeout(() => { document.getElementById('scanFeedback').innerText = ""; }, 2200);
+                }, (errorMessage) => {}).then(() => {
+                    setupCameraCapabilities(html5QrCode, false);
+                }).catch(err => {
+                    alert("無法啟動相機權限：" + err);
                     container.classList.add('hidden');
-                    btnText.innerText = "開啟相機連續掃描";
                     isScannerRunning = false;
+                });
+            }
+        }
+
+        function autoFillScannedText(text) {
+            const type = document.getElementById('selectType').value;
+            const isAutoAppend = document.getElementById('autoAppendToggle').checked;
+            
+            if(type === 'goods') {
+                formState.goods.barcode = text;
+                const el = document.getElementById('goodsBarcode');
+                if(el) el.value = text;
+                generateSingleBarcodes();
+                if(isAutoAppend) {
+                    appendCurrentToBatch(true);
+                }
+            } else if(type === 'utility') {
+                const c1El = document.getElementById('utilityCode1');
+                const c2El = document.getElementById('utilityCode2');
+                const c3El = document.getElementById('utilityCode3');
+
+                if (multiScanStep === 0) {
+                    formState.utility.code1 = text;
+                    if(c1El) c1El.value = text;
+                    multiScanStep = 1;
+                } else if (multiScanStep === 1) {
+                    formState.utility.code2 = text;
+                    if(c2El) c2El.value = text;
+                    multiScanStep = 2;
+                } else if (multiScanStep === 2) {
+                    formState.utility.code3 = text;
+                    if(c3El) c3El.value = text;
+                    multiScanStep = 3;
+                } else {
+                    formState.utility.code1 = text;
+                    if(c1El) c1El.value = text;
+                    multiScanStep = 1;
+                }
+                updateMultiScanPrompt();
+                generateSingleBarcodes();
+
+                if (isAutoAppend && (multiScanStep === 2 || multiScanStep === 3)) {
+                    appendCurrentToBatch(true);
+                    resetMultiScanProgress();
+                }
+            } else if(type === 'egtc') {
+                const e1El = document.getElementById('egtcBarcode1');
+                const e2El = document.getElementById('egtcBarcode2');
+
+                if (multiScanStep === 0) {
+                    formState.egtc.barcode1 = text;
+                    if(e1El) e1El.value = text;
+                    multiScanStep = 1;
+                } else if (multiScanStep === 1) {
+                    formState.egtc.barcode2 = text;
+                    if(e2El) e2El.value = text;
+                    multiScanStep = 2;
+                } else {
+                    formState.egtc.barcode1 = text;
+                    if(e1El) e1El.value = text;
+                    multiScanStep = 1;
+                }
+                updateMultiScanPrompt();
+                generateSingleBarcodes();
+
+                if (isAutoAppend && multiScanStep === 2) {
+                    appendCurrentToBatch(true);
+                    resetMultiScanProgress();
                 }
             }
         }
@@ -1285,50 +1003,391 @@
             const container = document.getElementById('batchScannerContainer');
             const btnText = document.getElementById('batchScannerBtnText');
 
-            if (!isBatchScannerRunning) {
+            if(isBatchScannerRunning) {
+                if(batchHtml5QrCode) {
+                    batchHtml5QrCode.stop().then(() => {
+                        container.classList.add('hidden');
+                        btnText.innerText = "開啟相機掃描加入商品";
+                        isBatchScannerRunning = false;
+                        batchTrackInstance = null;
+                        document.getElementById('batchTorchBtn').classList.add('hidden');
+                    }).catch(err => {});
+                }
+            } else {
                 container.classList.remove('hidden');
                 btnText.innerText = "關閉相機";
                 isBatchScannerRunning = true;
 
                 batchHtml5QrCode = new Html5Qrcode("batchReader");
-                batchHtml5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 150 } },
-                    (decodedText, decodedResult) => {
-                        document.getElementById('batchScanFeedback').innerText = `T已加入: ${decodedText}`;
-                        const resolved = getAutoBarcodeFormat(decodedText, 'AUTO');
+                const isLandscape = window.innerWidth > window.innerHeight;
+                const qrBoxSize = isLandscape ? { width: 320, height: 160 } : { width: 280, height: 220 };
 
-                        batchList.push({
-                            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                            code: decodedText,
-                            note: '相機掃描項目',
-                            showNote: true,
-                            qty: 1,
-                            formatPreference: 'AUTO',
-                            resolvedFormat: resolved.format,
-                            validatedCode: resolved.code
-                        });
-                        renderBatchList();
-                        showToast(`已掃描加入: ${decodedText}`);
-                    },
-                    (errorMessage) => {}
-                ).catch(err => {
-                    console.error("Batch camera error:", err);
-                    showToast('無法啟動相機');
-                    toggleBatchScanner();
-                });
-            } else {
-                if (batchHtml5QrCode) {
-                    batchHtml5QrCode.stop().then(() => {
-                        container.classList.add('hidden');
-                        btnText.innerText = "開啟相機連續掃描加入";
-                        isBatchScannerRunning = false;
-                    }).catch(err => console.error("Stop error", err));
-                } else {
+                const qrConfig = { 
+                    fps: 25, 
+                    qrbox: qrBoxSize,
+                    aspectRatio: isLandscape ? 1.777778 : 1.0,
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8
+                    ]
+                };
+
+                batchHtml5QrCode.start({ facingMode: "environment" }, qrConfig, (decodedText) => {
+                    const now = Date.now();
+                    if (decodedText === lastScannedText && now - lastScannedTime < 1000) return;
+                    lastScannedText = decodedText;
+                    lastScannedTime = now;
+
+                    playBeep();
+                    document.getElementById('batchScanFeedback').innerText = `已加入: ${decodedText}`;
+                    
+                    batchItems.push({
+                        code: decodedText,
+                        qty: 1,
+                        note: ""
+                    });
+                    renderBatchRows();
+                    generateBatchBarcodes();
+
+                    setTimeout(() => { document.getElementById('batchScanFeedback').innerText = ""; }, 1800);
+                }, (errorMessage) => {}).then(() => {
+                    setupCameraCapabilities(batchHtml5QrCode, true);
+                }).catch(err => {
+                    alert("無法啟動相機權限：" + err);
                     container.classList.add('hidden');
-                    btnText.innerText = "開啟相機連續掃描加入";
                     isBatchScannerRunning = false;
+                });
+            }
+        }
+
+        function autoResizeInput(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        function renderBatchRows() {
+            const container = document.getElementById('batchRowsContainer');
+            const countText = document.getElementById('batchLinesCountText');
+            if(!container) return;
+            
+            container.innerHTML = '';
+            if(countText) countText.innerText = `(共 ${batchItems.length} 筆)`;
+
+            if(batchItems.length === 0) {
+                container.innerHTML = '<div class="text-center text-xs text-slate-400 py-6">目前尚無商品批量資料，請點擊上方「新增一列商品」或載入範例。</div>';
+                generateBatchBarcodes();
+                return;
+            }
+
+            batchItems.forEach((item, index) => {
+                let rowDiv = document.createElement('div');
+                rowDiv.className = "grid grid-cols-12 gap-2 items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200";
+                
+                let currentQty = item.qty !== undefined ? item.qty : 1;
+                let qtyOptions = '';
+                for(let q = 1; q <= 10; q++) {
+                    qtyOptions += `<option value="${q}" ${currentQty === q ? 'selected' : ''}>${q}</option>`;
                 }
+
+                rowDiv.innerHTML = `
+                    <div class="col-span-5 sm:col-span-4 flex items-center">
+                        <input type="text" value="${item.code}" oninput="updateBatchItem(${index}, 'code', this.value)" placeholder="8碼或13碼"
+                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs transition-all">
+                    </div>
+                    <div class="col-span-3 sm:col-span-2 flex items-center">
+                        <select onchange="updateBatchItem(${index}, 'qty', this.value)"
+                            class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs">
+                            ${qtyOptions}
+                        </select>
+                    </div>
+                    <div class="col-span-3 sm:col-span-5 flex items-center">
+                        <textarea rows="1" oninput="updateBatchItem(${index}, 'note', this.value); autoResizeInput(this);" placeholder="品名說明 (選填，自動換行)"
+                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs transition-all batch-input-resizable resize-none overflow-hidden">${item.note || ''}</textarea>
+                    </div>
+                    <div class="col-span-1 flex justify-center">
+                        <button onclick="removeBatchRow(${index})" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="刪除此列">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2.2,2,0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(rowDiv);
+            });
+
+            setTimeout(() => {
+                container.querySelectorAll('textarea').forEach(textarea => {
+                    autoResizeInput(textarea);
+                });
+            }, 0);
+
+            generateBatchBarcodes();
+        }
+
+        function addBatchRow() {
+            batchItems.push({ code: "", qty: 1, note: "" });
+            renderBatchRows();
+        }
+
+        function removeBatchRow(index) {
+            batchItems.splice(index, 1);
+            renderBatchRows();
+        }
+
+        function updateBatchItem(index, field, value) {
+            if (field === 'qty') {
+                batchItems[index][field] = parseInt(value) || 1;
+            } else {
+                batchItems[index][field] = value;
+            }
+            generateBatchBarcodes();
+        }
+
+        function clearBatchRows() {
+            if(confirm("確定要清空所有商品批量清單嗎？")) {
+                batchItems = [];
+                renderBatchRows();
+            }
+        }
+
+        function fillBatchSample() {
+            batchItems = [
+                { code: "4710782177512", qty: 2, note: "經典總匯飯糰(EAN13)" },
+                { code: "47100123", qty: 5, note: "小型商品(EAN8)" },
+                { code: "4710123456789", qty: 1, note: "鮮乳坊特濃鮮乳" },
+                { code: "4710055667788", qty: 3, note: "特選御便當" }
+            ];
+            renderBatchRows();
+            showToast("已成功載入商品範例！");
+        }
+
+        function generateBatchBarcodes() {
+            const container = document.getElementById('batchResultsContainer');
+            const showQr = document.getElementById('batchShowQrToggle').checked;
+            const selectedFormat = document.getElementById('batchFormatSelect').value;
+            container.innerHTML = '';
+
+            if(batchItems.length === 0) {
+                container.innerHTML = '<div class="col-span-3 text-center text-xs text-slate-400 py-6">目前尚無商品批量資料</div>';
+                return;
+            }
+
+            let currentPageWrapper = null;
+            
+            batchItems.forEach((item, index) => {
+                if (index % 12 === 0) {
+                    currentPageWrapper = document.createElement('div');
+                    currentPageWrapper.className = "page-break-wrapper";
+                    container.appendChild(currentPageWrapper);
+                }
+
+                let codePart = item.code;
+                let qtyPart = item.qty || 1;
+                let notePart = item.note || '批量項目';
+
+                let itemDiv = document.createElement('div');
+                itemDiv.className = "batch-item bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between gap-2";
+
+                let barcodeSvgId = `batch_bc_${index}`;
+                let qrDivId = `batch_qr_${index}`;
+                let errorId = `batch_err_${index}`;
+
+                let fmt = selectedFormat;
+                if (fmt === 'AUTO') {
+                    if (codePart.length === 13 && /^\d+$/.test(codePart)) fmt = 'EAN13';
+                    else if (codePart.length === 8 && /^\d+$/.test(codePart)) fmt = 'EAN8';
+                    else fmt = 'INVALID';
+                }
+
+                const isValid = (fmt === 'EAN8' && codePart.length === 8 && /^\d+$/.test(codePart)) || 
+                                (fmt === 'EAN13' && codePart.length === 13 && /^\d+$/.test(codePart));
+
+                if (!isValid) {
+                    itemDiv.innerHTML = `
+                        <div class="w-full text-center">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] font-bold text-slate-500">#${index + 1} (${notePart})</span>
+                                <span class="text-[10px] font-mono text-rose-600 font-bold">${codePart || '未輸入'}</span>
+                            </div>
+                            <div id="${errorId}" class="text-[10px] text-rose-600 bg-rose-50 border border-rose-200 p-2 rounded text-center font-bold">
+                                條碼錯誤(需8或13碼數字)
+                            </div>
+                        </div>
+                    `;
+                    currentPageWrapper.appendChild(itemDiv);
+                    return;
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="w-full space-y-1.5">
+                        <div class="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
+                            <div class="flex items-center space-x-1.5 overflow-hidden">
+                                <span class="text-[10px] font-bold text-slate-500 shrink-0">#${index + 1}</span>
+                                <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 truncate">${notePart}</span>
+                            </div>
+                            <div class="flex items-center space-x-1 shrink-0">
+                                <span class="text-[10px] text-slate-500">數:<span class="text-emerald-600 font-bold">${qtyPart}</span></span>
+                            </div>
+                        </div>
+                        <div class="text-center font-mono text-[10px] text-slate-500">${codePart}</div>
+                        <div class="flex justify-center overflow-x-auto py-0.5">
+                            <svg id="${barcodeSvgId}" class="max-w-full"></svg>
+                        </div>
+                    </div>
+                    ${showQr ? `<div class="flex flex-col items-center justify-center border-t border-slate-100 pt-1.5 mt-0.5"><div id="${qrDivId}" class="bg-white p-1 rounded border border-slate-200"></div></div>` : ''}
+                `;
+                currentPageWrapper.appendChild(itemDiv);
+
+                try {
+                    JsBarcode(`#${barcodeSvgId}`, codePart, {
+                        format: fmt,
+                        lineColor: "#0f172a",
+                        width: 1.4,
+                        height: 40,
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 1
+                    });
+
+                    if(showQr) {
+                        const batchQrPayload = {
+                            "Payment": [
+                                {
+                                    "Goods": [
+                                        {
+                                            "Device": "POS",
+                                            "Barcode": Number(codePart),
+                                            "Quantity": qtyPart
+                                        }
+                                    ]
+                                }
+                            ]
+                        };
+                        new QRCode(document.getElementById(qrDivId), {
+                            text: JSON.stringify(batchQrPayload),
+                            width: 52,
+                            height: 52,
+                            colorDark : "#0f172a",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    }
+                } catch(e) {}
+            });
+        }
+
+        function saveBatchBarcodes() {
+            if(batchItems.length === 0) {
+                alert("沒有可儲存的商品批量內容！");
+                return;
+            }
+
+            let successCount = 0;
+            batchItems.forEach(item => {
+                let codePart = item.code;
+                let qtyPart = item.qty || 1;
+                let notePart = item.note || '批量商品';
+
+                if ((codePart.length === 8 || codePart.length === 13) && /^\d+$/.test(codePart)) {
+                    savedBarcodes.push({
+                        type: 'goods-batch',
+                        code: codePart,
+                        qty: qtyPart,
+                        note: notePart,
+                        time: new Date().toLocaleString()
+                    });
+                    successCount++;
+                }
+            });
+
+            localStorage.setItem('seven_pos_saved', JSON.stringify(savedBarcodes));
+            updateSavedCount();
+            alert(`成功儲存 ${successCount} 筆合法的 EAN-8 / EAN-13 商品條碼至我的清單！`);
+        }
+
+        function saveCurrentBarcode() {
+            const type = document.getElementById('selectType').value;
+            let codeVal = "";
+            let qty = 1;
+
+            if(type === 'goods') {
+                codeVal = formState.goods.barcode.trim();
+                qty = formState.goods.qty;
+                
+                if ((codeVal.length !== 8 && codeVal.length !== 13) || !/^\d+$/.test(codeVal)) {
+                    alert("條碼錯誤：商品條碼必須為 8 碼 (EAN-8) 或 13 碼 (EAN-13) 純數字，無法儲存！");
+                    return;
+                }
+            } else if(type === 'utility') {
+                codeVal = `code1:${formState.utility.code1}, code2:${formState.utility.code2}, code3:${formState.utility.code3}`;
+                qty = 1;
+            } else if(type === 'egtc') {
+                codeVal = `${formState.egtc.barcode1} & ${formState.egtc.barcode2}`;
+                qty = 1;
+            }
+
+            savedBarcodes.push({
+                type: type,
+                code: codeVal,
+                qty: qty,
+                note: '單筆紀錄',
+                time: new Date().toLocaleString()
+            });
+
+            localStorage.setItem('seven_pos_saved', JSON.stringify(savedBarcodes));
+            updateSavedCount();
+            alert("已成功將此筆條碼儲存！");
+        }
+
+        function updateSavedCount() {
+            document.getElementById('savedCountBadge').innerText = savedBarcodes.length;
+        }
+
+        function openSavedModal() {
+            const container = document.getElementById('savedListContainer');
+            container.innerHTML = '';
+
+            if(savedBarcodes.length === 0) {
+                container.innerHTML = '<div class="text-center text-xs text-slate-400 py-10">目前沒有已儲存的條碼</div>';
+            } else {
+                savedBarcodes.forEach((item, index) => {
+                    let div = document.createElement('div');
+                    div.className = "bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs";
+                    div.innerHTML = `
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] uppercase font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${item.type}</span>
+                                ${item.note ? `<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">${item.note}</span>` : ''}
+                                <span class="text-xs text-slate-400">${item.time}</span>
+                            </div>
+                            <div class="text-xs font-mono font-bold text-slate-800 mt-1.5">${item.code}</div>
+                            <div class="text-[11px] text-emerald-600 mt-0.5 font-semibold">數量: ${item.qty}</div>
+                        </div>
+                        <button onclick="deleteSavedItem(${index})" class="text-slate-400 hover:text-rose-600 p-2 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2.2,2,0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            document.getElementById('savedModal').classList.remove('hidden');
+        }
+
+        function closeSavedModal() {
+            document.getElementById('savedModal').classList.add('hidden');
+        }
+
+        function deleteSavedItem(index) {
+            savedBarcodes.splice(index, 1);
+            localStorage.setItem('seven_pos_saved', JSON.stringify(savedBarcodes));
+            updateSavedCount();
+            openSavedModal();
+        }
+
+        function clearSavedBarcodes() {
+            if(confirm("確定要清空所有已儲存的條碼嗎？")) {
+                savedBarcodes = [];
+                localStorage.removeItem('seven_pos_saved');
+                updateSavedCount();
+                openSavedModal();
             }
         }
     </script>
