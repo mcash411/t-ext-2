@@ -47,15 +47,15 @@
         }
         .batch-item svg {
             width: 100% !important;
-            max-width: 190px !important;
-            height: 52px !important;
+            max-width: 170px !important;
+            height: 48px !important;
             object-fit: contain;
             display: block;
             margin: 0 auto;
         }
         .batch-item canvas, .batch-item img {
-            width: 90px !important;
-            height: 90px !important;
+            width: 76px !important;
+            height: 76px !important;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -70,7 +70,7 @@
                 display: grid !important;
                 grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
                 grid-template-rows: repeat(4, auto) !important;
-                gap: 6mm !important;
+                gap: 5mm !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
             }
@@ -82,26 +82,27 @@
                 page-break-inside: avoid !important;
                 border: 1px solid #cbd5e1 !important;
                 margin-bottom: 0 !important;
-                padding: 8px !important;
+                padding: 6px !important;
                 background: white !important;
                 box-sizing: border-box !important;
-                max-height: 60mm !important;
+                max-height: 58mm !important;
                 overflow: hidden !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
+                justify-content: space-between !important;
                 text-align: center !important;
             }
             .batch-item svg {
                 width: 100% !important;
-                max-width: 160px !important;
-                height: 42px !important;
+                max-width: 150px !important;
+                height: 38px !important;
                 display: block !important;
                 margin: 0 auto !important;
             }
             .batch-item canvas, .batch-item img {
-                width: 76px !important;
-                height: 76px !important;
+                width: 68px !important;
+                height: 68px !important;
                 display: block !important;
                 margin: 0 auto !important;
             }
@@ -1240,7 +1241,7 @@
                 let notePart = item.note || '批量項目';
 
                 let itemDiv = document.createElement('div');
-                itemDiv.className = "batch-item bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-between gap-2 text-center";
+                itemDiv.className = "batch-item bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-between gap-1.5 text-center";
 
                 let barcodeSvgId = `batch_bc_${index}`;
                 let qrDivId = `batch_qr_${index}`;
@@ -1258,7 +1259,7 @@
 
                 if (!isValid) {
                     itemDiv.innerHTML = `
-                        <div class="w-full text-center">
+                        <div class="w-full text-center my-auto">
                             <div class="flex items-center justify-between mb-1 w-full">
                                 <span class="text-[10px] font-bold text-slate-500">#${index + 1}</span>
                                 <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded truncate max-w-[100px]">${notePart}</span>
@@ -1273,8 +1274,8 @@
                 }
 
                 itemDiv.innerHTML = `
-                    <div class="w-full flex flex-col items-center space-y-1.5">
-                        <div class="flex items-center justify-between w-full border-b border-slate-100 pb-1 px-1">
+                    <div class="w-full flex flex-col items-center justify-center space-y-1">
+                        <div class="flex items-center justify-between w-full border-b border-slate-100 pb-1 px-0.5">
                             <div class="flex items-center space-x-1.5 overflow-hidden">
                                 <span class="text-[10px] font-bold text-slate-500 shrink-0">#${index + 1}</span>
                                 <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 truncate max-w-[110px]">${notePart}</span>
@@ -1284,11 +1285,11 @@
                             </div>
                         </div>
                         <div class="text-center font-mono text-[10px] text-slate-500 tracking-wider">${codePart}</div>
-                        <div class="w-full flex justify-center items-center py-0.5">
-                            <svg id="${barcodeSvgId}" class="mx-auto block"></svg>
+                        <div class="w-full flex items-center justify-center my-0.5" style="min-height: 48px;">
+                            <svg id="${barcodeSvgId}" class="mx-auto block" style="max-height: 48px;"></svg>
                         </div>
                     </div>
-                    ${showQr ? `<div class="w-full flex flex-col items-center justify-center border-t border-slate-100 pt-1.5 mt-1"><div id="${qrDivId}" class="bg-white p-1 rounded border border-slate-200 flex justify-center items-center mx-auto"></div></div>` : ''}
+                    ${showQr ? `<div class="w-full flex flex-col items-center justify-center border-t border-slate-100 pt-1 mt-0.5"><div id="${qrDivId}" class="bg-white p-1 rounded border border-slate-200 flex justify-center items-center mx-auto" style="width: 76px; height: 76px;"></div></div>` : ''}
                 `;
                 currentPageWrapper.appendChild(itemDiv);
 
@@ -1297,10 +1298,10 @@
                         format: fmt,
                         lineColor: "#0f172a",
                         width: 1.8,
-                        height: 48,
+                        height: 42,
                         displayValue: true,
-                        fontSize: 11,
-                        margin: 2
+                        fontSize: 10,
+                        margin: 1
                     });
 
                     if(showQr) {
@@ -1319,8 +1320,8 @@
                         };
                         new QRCode(document.getElementById(qrDivId), {
                             text: JSON.stringify(batchQrPayload),
-                            width: 80,
-                            height: 80,
+                            width: 68,
+                            height: 68,
                             colorDark : "#0f172a",
                             colorLight : "#ffffff",
                             correctLevel : QRCode.CorrectLevel.M
